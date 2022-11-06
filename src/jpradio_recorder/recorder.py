@@ -16,7 +16,6 @@ class Recorder:
         self._media_root = media_root
 
         config = load_config()
-        config.pop(Onsen.id)  # TODO
         self._platforms: Dict[str, Platform] = {
             Radiko.id: Radiko(**config.get(Radiko.id, {})),
             Onsen.id: Onsen(**config.get(Onsen.id, {})),
@@ -35,7 +34,7 @@ class Recorder:
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         for platform in self._platforms.values():
-            platform.login()
+            platform.close()
         self.db.close()
 
     def reset_fetched_programs(self) -> None:
