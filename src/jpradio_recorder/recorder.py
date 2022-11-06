@@ -80,7 +80,10 @@ class Recorder:
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
         timestamp_name = "fetch"
         timestamp = self.db.timestamp.find_one({"name": timestamp_name})
-        timestamp = timestamp["datetime"]
+        if not timestamp:
+            force = True
+        else:
+            timestamp = timestamp["datetime"]
         now = datetime.datetime.now()
         if not force and timestamp + datetime.timedelta(days=interval_days) > now:
             return
