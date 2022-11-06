@@ -2,12 +2,13 @@ import datetime
 import os
 from typing import Any, Dict, List, Optional
 
+import tqdm
 from jpradio import Hibiki, Onsen, Program, Radiko, Station
 from jpradio.platforms.base import Platform
 from jpradio.util import load_config
 
 from .database import Database
-from .reservation_conditions import ReservationConditions
+from .query import ProgramQuery, ProgramQueryList
 from .util import fix_to_path
 
 
@@ -86,10 +87,8 @@ class Recorder:
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
         self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
 
-    def reserve_programs(
-        self, conditions: List[ReservationConditions]
-    ) -> List[Program]:
-        query = {"$or": [c.to_query() for c in conditions]}
+    def reserve_programs(self, queries: ProgramQueryList) -> List[Program]:
+        query = queries.to_query()
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
@@ -108,25 +107,24 @@ class Recorder:
         }
 
         # Only programs that have completed broadcasting can be downloaded.
-        date_condition = ReservationConditions(
+        date_query = ProgramQuery(
             datetime={"$lt": datetime.datetime.now() - datetime.timedelta(hours=2)},
         )
-        target_programs = self.db.reserved_programs.find(date_condition.to_query())
+        target_programs = self.db.reserved_programs.find(date_query.to_query())
 
         ret = []
-        for program in target_programs:
+        for program in tqdm.tqdm(list(target_programs)):
             target_id = program.pop("_id")
             res = self.db.recorded_programs.find_one(program)
             if not res:
                 program = Program.from_dict(program)
                 platform = station_id_platform_map[program.station_id]
-                filename = platform.get_default_filename(program)
                 filename = os.path.join(
                     self._media_root,
                     platform.id,
                     program.station_id,
                     fix_to_path(program.name),
-                    filename,
+                    platform.get_default_filename(program),
                 )
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 try:

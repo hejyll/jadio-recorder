@@ -1,17 +1,16 @@
 from typing import List
 
-from jpradio_recorder import RecordedProgram, Recorder
-from jpradio_recorder.reservation_conditions import load_reservation_conditions
+from jpradio_recorder import ProgramQueryList, RecordedProgram, Recorder
 
 
 def record(
     media_root: str,
-    conditions_path: str,
+    queries_path: str,
 ) -> List[RecordedProgram]:
-    conditions = load_reservation_conditions(conditions_path)
+    queries = ProgramQueryList.from_json(queries_path)
     with Recorder(media_root=media_root) as recorder:
         recorder.fetch_programs()
-        recorder.reserve_programs(conditions)
+        recorder.reserve_programs(queries)
         programs = recorder.record_programs()
     return programs
 

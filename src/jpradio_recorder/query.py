@@ -7,7 +7,7 @@ Condition = Optional[Union[T, Dict[str, T]]]
 
 
 @dataclasses.dataclass
-class ReservationConditions:
+class ProgramQuery:
     station_id: Condition[str] = None
     program_id: Condition[int] = None
     program_name: Condition[str] = None
@@ -24,10 +24,10 @@ class ReservationConditions:
     is_video: Condition[bool] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ReservationConditions":
+    def from_dict(cls, data: Dict[str, Any]) -> "ProgramQuery":
         return cls(**data)
 
-    def to_dict(self, ignore_empty: bool = True) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         ret = {
             "station_id": self.station_id,
             "program_id": self.program_id,
@@ -44,9 +44,7 @@ class ReservationConditions:
             "guests": self.guests,
             "is_video": self.is_video,
         }
-        if ignore_empty:
-            return {key: value for key, value in ret.items() if value}
-        return ret
+        return {key: value for key, value in ret.items() if value}
 
     def to_query(self) -> Dict[str, List[Dict[str, Any]]]:
         ret = []
@@ -55,13 +53,22 @@ class ReservationConditions:
         return {"$and": ret}
 
 
-def save_reservation_conditions(conditions: List[ReservationConditions], filename: str) -> None:
-    with open(filename, "w") as fh:
-        conditions = [cond.to_dict() for cond in conditions]
-        json.dump(conditions, fh, indent=2, ensure_ascii=False)
+class ProgramQueryList:
+    def __init__(self, queries: List[ProgramQuery]) -> None:
+        self._queries = queries
 
+    def to_dict(self) -> List[Dict[str, Any]]:
+        return [query.to_dict() for query in self._queries]
 
-def load_reservation_conditions(filename: str) -> List[ReservationConditions]:
-    with open(filename, "r") as fh:
-        conditions = json.load(fh)
-    return [ReservationConditions.from_dict(cond) for cond in conditions]
+    def to_query(self) -> Dict[str, Dict[str, Any]]:
+        return {"$or": [query.to_query() for query in self._queries]}
+
+    def to_json(self, filename: str) -> None:
+        with open(filename, "w") as fh:
+            json.dump(self.to_dict(), fh, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def from_json(cls, filename: str) -> "ProgramQueryList":
+        with open(filename, "r") as fh:
+            queries = json.load(fh)
+        return cls([ProgramQuery.from_dict(query) for query in queries])
