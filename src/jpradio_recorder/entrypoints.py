@@ -1,6 +1,7 @@
 from typing import List
 
-from jpradio_recorder import ProgramQueryList, RecordedProgram, Recorder
+from .query import ProgramQueryList
+from .recorder import RecordedProgram, Recorder
 
 
 def record(
