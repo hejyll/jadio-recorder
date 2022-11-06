@@ -1,7 +1,6 @@
 import dataclasses
+import json
 from typing import Any, Dict, List, Optional, TypeVar, Union
-
-from jpradio import Program
 
 T = TypeVar("T")
 Condition = Optional[Union[T, Dict[str, T]]]
@@ -23,6 +22,10 @@ class ReservationConditions:
     ascii_name: Condition[str] = None
     guests: Condition[List[str]] = None
     is_video: Condition[bool] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ReservationConditions":
+        return cls(**data)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -50,14 +53,7 @@ class ReservationConditions:
         return {"$and": ret}
 
 
-class RecordedProgram(Program):
-    filename: Optional[str] = None
-    recorded_datetime: Optional[Any] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        ret = super().to_dict()
-        return {
-            **ret,
-            "filename": self.filename,
-            "recorded_datetime": self.recorded_datetime,
-        }
+def load_reservation_conditions_file(filename: str) -> List[ReservationConditions]:
+    with open(filename, "r") as fh:
+        conditions = json.load(fh)
+    return [ReservationConditions.from_dict(cond) for cond in conditions]

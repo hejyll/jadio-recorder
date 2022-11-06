@@ -1,14 +1,27 @@
 import datetime
 import os
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from jpradio import Hibiki, Onsen, Program, Radiko, Station
 from jpradio.platforms.base import Platform
 from jpradio.util import load_config
 
 from .database import Database
-from .documents import RecordedProgram, ReservationConditions
+from .reservation_conditions import ReservationConditions
 from .util import fix_to_path
+
+
+class RecordedProgram(Program):
+    filename: Optional[str] = None
+    recorded_datetime: Optional[Any] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        ret = super().to_dict()
+        return {
+            **ret,
+            "filename": self.filename,
+            "recorded_datetime": self.recorded_datetime,
+        }
 
 
 class Recorder:
