@@ -92,10 +92,8 @@ class Recorder:
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
-            res = self.db.reserved_programs.find_one(program)
-            if not res:
-                res = self.db.recorded_programs.find_one(program)
-                if not res:
+            if not self.db.reserved_programs.find_one(program):
+                if not self.db.recorded_programs.find_one(program):
                     ret.append(Program.from_dict(program))
                     self.db.reserved_programs.insert_one(program)
         return ret
@@ -115,8 +113,7 @@ class Recorder:
         ret = []
         for program in tqdm.tqdm(list(target_programs)):
             target_id = program.pop("_id")
-            res = self.db.recorded_programs.find_one(program)
-            if not res:
+            if not self.db.recorded_programs.find_one(program):
                 program = Program.from_dict(program)
                 platform = station_id_platform_map[program.station_id]
                 filename = os.path.join(
