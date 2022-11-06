@@ -118,16 +118,16 @@ class Recorder:
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 try:
                     platform.download(program, filename)
-                except:
-                    continue
-                recorded = RecordedProgram.from_dict(
-                    {
-                        **program.to_dict(),
-                        "filename": filename,
-                        "recorded_datetime": datetime.datetime.now(),
-                    }
-                )
-                ret.append(recorded)
-                self.db.recorded_programs.insert_one(recorded.to_dict())
+                    recorded = RecordedProgram.from_dict(
+                        {
+                            **program.to_dict(),
+                            "filename": filename,
+                            "recorded_datetime": datetime.datetime.now(),
+                        }
+                    )
+                    ret.append(recorded)
+                    self.db.recorded_programs.insert_one(recorded.to_dict())
+                except Exception:
+                    pass
             self.db.reserved_programs.delete_one({"_id": target_id})
         return ret
