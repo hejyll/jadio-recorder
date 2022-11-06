@@ -20,6 +20,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     tty: true
+    shm_size: 2g
     volumes:
       - ${SVR_ROOT}/jpradio-recorder:/data/jpradio-recorder
       - ${MEDIA_ROOT}:/data/media
