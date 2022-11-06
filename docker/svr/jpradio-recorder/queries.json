@@ -1,0 +1,8 @@
+[
+  {
+    "station_id": "TBS",
+    "program_name": {
+      "$regex": "JUNK"
+    }
+  }
+]
