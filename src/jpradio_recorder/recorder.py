@@ -8,6 +8,7 @@ from jpradio.util import load_config
 
 from .database import Database
 from .documents import RecordedProgram, ReservationConditions
+from .util import fix_to_path
 
 
 class Recorder:
@@ -112,7 +113,7 @@ class Recorder:
                     self._media_root,
                     platform.id,
                     program.station_id,
-                    program.name,
+                    fix_to_path(program.name),
                     filename,
                 )
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
