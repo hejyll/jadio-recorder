@@ -1,11 +1,14 @@
+from typing import Optional
+
 import pymongo
 import pymongo.collation
 import pymongo.database
 
 
 class Database:
-    def __init__(self) -> None:
-        self._client = pymongo.MongoClient("mongodb://localhost:27017/")
+    def __init__(self, host: Optional[str] = None) -> None:
+        host = host or "mongodb://localhost:27017/"
+        self._client = pymongo.MongoClient(host)
 
     def __enter__(self) -> "Database":
         return self

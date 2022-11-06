@@ -26,16 +26,20 @@ class RecordedProgram(Program):
 
 
 class Recorder:
-    def __init__(self, media_root: str = ".") -> None:
+    def __init__(
+        self,
+        media_root: str = ".",
+        platform_config_path: Optional[str] = None,
+        database_host: Optional[str] = None,
+    ) -> None:
         self._media_root = media_root
 
-        config = load_config()
-        self._platforms: Dict[str, Platform] = {
-            Radiko.id: Radiko(**config.get(Radiko.id, {})),
-            Onsen.id: Onsen(**config.get(Onsen.id, {})),
-            Hibiki.id: Hibiki(**config.get(Hibiki.id, {})),
+        config = load_config(platform_config_path)
+        platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
+        self._platforms = {
+            cls.id: cls(**config.get(cls.id, {})) for cls in platform_classes
         }
-        self._database = Database()
+        self._database = Database(database_host)
 
     @property
     def db(self) -> Database:
