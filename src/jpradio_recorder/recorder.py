@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 import tqdm
 from jpradio import Hibiki, Onsen, Program, Radiko, Station
 from jpradio.platforms.base import Platform
-from jpradio.util import load_config
 
 from .database import Database
 from .query import ProgramQuery, ProgramQueryList
@@ -29,15 +28,14 @@ class Recorder:
     def __init__(
         self,
         media_root: str = ".",
-        platform_config_path: Optional[str] = None,
+        platform_config: Dict[str, str] = {},
         database_host: Optional[str] = None,
     ) -> None:
         self._media_root = media_root
 
-        config = load_config(platform_config_path)
         platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
         self._platforms = {
-            cls.id: cls(**config.get(cls.id, {})) for cls in platform_classes
+            cls.id: cls(**platform_config.get(cls.id, {})) for cls in platform_classes
         }
         self._database = Database(database_host)
 
