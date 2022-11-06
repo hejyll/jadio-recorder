@@ -41,7 +41,7 @@ def main():
         ProgramQueryList.from_json(args.queries_path),
         media_root=args.media_root,
         platform_config=platform_config,
-        database_host=args.database_root,
+        database_host=args.database_host,
     )
 
 
