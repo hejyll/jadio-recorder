@@ -27,8 +27,8 @@ class ReservationConditions:
     def from_dict(cls, data: Dict[str, Any]) -> "ReservationConditions":
         return cls(**data)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
+    def to_dict(self, ignore_empty: bool = True) -> Dict[str, Any]:
+        ret = {
             "station_id": self.station_id,
             "program_id": self.program_id,
             "program_name": self.program_name,
@@ -44,16 +44,24 @@ class ReservationConditions:
             "guests": self.guests,
             "is_video": self.is_video,
         }
+        if ignore_empty:
+            return {key: value for key, value in ret.items() if value}
+        return ret
 
     def to_query(self) -> Dict[str, List[Dict[str, Any]]]:
         ret = []
         for key, condition in self.to_dict().items():
-            if condition:
-                ret.append({key.replace("program_", ""): condition})
+            ret.append({key.replace("program_", ""): condition})
         return {"$and": ret}
 
 
-def load_reservation_conditions_file(filename: str) -> List[ReservationConditions]:
+def save_reservation_conditions(conditions: List[ReservationConditions], filename: str) -> None:
+    with open(filename, "w") as fh:
+        conditions = [cond.to_dict() for cond in conditions]
+        json.dump(conditions, fh, indent=2, ensure_ascii=False)
+
+
+def load_reservation_conditions(filename: str) -> List[ReservationConditions]:
     with open(filename, "r") as fh:
         conditions = json.load(fh)
     return [ReservationConditions.from_dict(cond) for cond in conditions]
