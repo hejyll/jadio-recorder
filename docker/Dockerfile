@@ -14,4 +14,4 @@ RUN python3 -m pip install git+https://github.com/hejyll/jpradio-recorder
 COPY ./jpradio-recorder.sh /etc/cron.daily/
 RUN ln -sf /proc/1/fd/1 /var/log/cron.log
 
-CMD crond -f
+CMD cron -f
