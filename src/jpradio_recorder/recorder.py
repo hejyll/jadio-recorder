@@ -90,7 +90,7 @@ class Recorder:
         self, conditions: List[ReservationConditions]
     ) -> List[Program]:
         query = {"$or": [c.to_query() for c in conditions]}
-        ret = []
+        ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
             res = self.db.reserved_programs.find_one(program)
