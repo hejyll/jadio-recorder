@@ -1,2 +1,3 @@
-from .documents import RecordedProgram, ReservationConditions, ReservedProgram
+from .database import Database  # NOQA
+from .documents import RecordedProgram, ReservationConditions  # NOQA
 from .recorder import Recorder  # NOQA

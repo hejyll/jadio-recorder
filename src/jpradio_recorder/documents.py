@@ -1,5 +1,4 @@
 import dataclasses
-import datetime
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from jpradio import Program
@@ -51,24 +50,14 @@ class ReservationConditions:
         return {"$and": ret}
 
 
-class ReservedProgram(Program):
-    conditions: ReservationConditions
+class RecordedProgram(Program):
+    filename: Optional[str] = None
+    recorded_datetime: Optional[Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
         ret = super().to_dict()
-        ret = {**ret, "conditions": self.conditions.to_dict()}
-        return ret
-
-
-class RecordedProgram(ReservedProgram):
-    media_path: str
-    recorded_date: datetime.datetime
-
-    def to_dict(self) -> Dict[str, Any]:
-        ret = super().to_dict()
-        ret = {
+        return {
             **ret,
-            "media_path": self.media_path,
-            "recorded_date": self.recorded_date,
+            "filename": self.filename,
+            "recorded_datetime": self.recorded_datetime,
         }
-        return ret
