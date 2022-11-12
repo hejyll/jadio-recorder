@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 from typing import Any, Dict, List, Optional
 
@@ -9,6 +10,8 @@ from jpradio.platforms.base import Platform
 from .database import Database
 from .query import ProgramQuery, ProgramQueryList
 from .util import fix_to_path
+
+logger = logging.getLogger(__name__)
 
 
 class RecordedProgram(Program):
@@ -78,6 +81,7 @@ class Recorder:
         return ret
 
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
+        logger.info("Start fetching programs")
         timestamp_name = "fetch"
         timestamp = self.db.timestamp.find_one({"name": timestamp_name})
         if not timestamp:
@@ -91,8 +95,10 @@ class Recorder:
         programs = sum([p.get_programs() for p in self._platforms.values()], [])
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
         self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
+        logger.info(f"Finish fetching {len(programs)} programs")
 
     def reserve_programs(self, queries: ProgramQueryList) -> List[Program]:
+        logger.info("Start reserving programs")
         query = queries.to_query()
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
@@ -101,9 +107,11 @@ class Recorder:
                 if not self.db.recorded_programs.find_one(program):
                     ret.append(Program.from_dict(program))
                     self.db.reserved_programs.insert_one(program)
+        logger.info(f"Finish reserving {len(ret)} program(s)")
         return ret
 
     def record_programs(self) -> List[RecordedProgram]:
+        logger.info("Start recording programs")
         station_id_platform_map = {
             station.id: self._platforms[station.platform_id]
             for station in self.get_stations()
@@ -143,4 +151,5 @@ class Recorder:
                 except Exception:
                     pass
             self.db.reserved_programs.delete_one({"_id": target_id})
+        logger.info(f"Finish recording {len(ret)} program(s)")
         return ret
