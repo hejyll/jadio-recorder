@@ -16,6 +16,7 @@ def record(
         database_host=database_host,
     ) as recorder:
         recorder.fetch_programs()
+        recorder.db.reset_reserved_programs()
         recorder.reserve_programs(queries)
         programs = recorder.record_programs()
     return programs
