@@ -79,6 +79,7 @@ class Recorder:
             timestamp = timestamp["datetime"]
         now = datetime.datetime.now()
         if not force and timestamp + datetime.timedelta(days=interval_days) > now:
+            logger.info("Skip fetching programs")
             return
 
         programs = sum([p.get_programs() for p in self._platforms.values()], [])
