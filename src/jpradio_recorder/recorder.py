@@ -70,7 +70,6 @@ class Recorder:
         return ret
 
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
-        logger.info("Start fetching programs")
         timestamp_name = "fetch"
         timestamp = self.db.timestamp.find_one({"name": timestamp_name})
         if not timestamp:
@@ -79,13 +78,13 @@ class Recorder:
             timestamp = timestamp["datetime"]
         now = datetime.datetime.now()
         if not force and timestamp + datetime.timedelta(days=interval_days) > now:
-            logger.info("Skip fetching programs")
             return
 
+        logger.info("Start fetching programs")
         programs = sum([p.get_programs() for p in self._platforms.values()], [])
+        logger.info(f"Finish fetching {len(programs)} programs")
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
         self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
-        logger.info(f"Finish fetching {len(programs)} programs")
 
     def reserve_programs(self, queries: ProgramQueryList) -> List[Program]:
         logger.info("Start reserving programs")
