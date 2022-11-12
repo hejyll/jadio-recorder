@@ -42,3 +42,15 @@ class Database:
     @property
     def timestamp(self) -> pymongo.collation.Collation:
         return self._database.get_collection("timestamp")
+
+    def reset_fetched_programs(self) -> None:
+        self.fetched_programs.delete_many({})
+
+    def reset_reserved_programs(self) -> None:
+        self.reserved_programs.delete_many({})
+
+    def reset_recorded_programs(self) -> None:
+        self.recorded_programs.delete_many({})
+
+    def reset_timestamp(self) -> None:
+        self.timestamp.delete_many({})

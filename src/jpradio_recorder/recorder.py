@@ -36,7 +36,8 @@ class Recorder:
     ) -> None:
         self._media_root = media_root
 
-        platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
+        # platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
+        platform_classes: List[Platform] = [Onsen, Hibiki]
         self._platforms = {
             cls.id: cls(**platform_config.get(cls.id, {})) for cls in platform_classes
         }
@@ -55,18 +56,6 @@ class Recorder:
         for platform in self._platforms.values():
             platform.close()
         self.db.close()
-
-    def reset_fetched_programs(self) -> None:
-        self.db.fetched_programs.delete_many({})
-
-    def reset_reserved_programs(self) -> None:
-        self.db.reserved_programs.delete_many({})
-
-    def reset_recorded_programs(self) -> None:
-        self.db.recorded_programs.delete_many({})
-
-    def reset_timestamp(self) -> None:
-        self.db.timestamp.delete_many({})
 
     def fetch_stations(self) -> None:
         stations = sum([p.get_stations() for p in self._platforms.values()], [])
