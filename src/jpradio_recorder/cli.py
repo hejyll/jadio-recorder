@@ -5,7 +5,8 @@ import logging
 from jpradio_recorder import ProgramQueryList, entrypoints
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
 )
 
 

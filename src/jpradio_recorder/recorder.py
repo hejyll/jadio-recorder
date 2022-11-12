@@ -36,8 +36,7 @@ class Recorder:
     ) -> None:
         self._media_root = media_root
 
-        # platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
-        platform_classes: List[Platform] = [Onsen, Hibiki]
+        platform_classes: List[Platform] = [Radiko, Onsen, Hibiki]
         self._platforms = {
             cls.id: cls(**platform_config.get(cls.id, {})) for cls in platform_classes
         }
