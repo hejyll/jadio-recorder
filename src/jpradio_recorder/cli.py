@@ -1,7 +1,12 @@
 import argparse
 import json
+import logging
 
 from jpradio_recorder import ProgramQueryList, entrypoints
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 def parse_args() -> argparse.Namespace:
