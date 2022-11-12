@@ -52,5 +52,8 @@ class Database:
     def reset_recorded_programs(self) -> None:
         self.recorded_programs.delete_many({})
 
+    def reset_stations(self) -> None:
+        self.stations.delete_many({})
+
     def reset_timestamp(self) -> None:
         self.timestamp.delete_many({})
