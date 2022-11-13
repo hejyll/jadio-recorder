@@ -82,6 +82,7 @@ class Recorder:
         logger.info("Start fetching programs")
         programs = sum([p.get_programs() for p in self._platforms.values()], [])
         logger.info(f"Finish fetching {len(programs)} programs")
+        self.db.reset_fetched_programs()
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
         self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
 
