@@ -35,7 +35,7 @@ class Recorder:
     ) -> None:
         self._media_root = media_root
 
-        self._platforms = Jpradio(platform_config)
+        self._platform = Jpradio(platform_config)
         self._database = Database(database_host)
 
     @property
@@ -50,14 +50,14 @@ class Recorder:
         self.close()
 
     def login(self) -> None:
-        self._platforms.login()
+        self._platform.login()
 
     def close(self) -> None:
-        self._platforms.close()
+        self._platform.close()
         self.db.close()
 
     def fetch_stations(self) -> None:
-        stations = self._platforms.get_stations()
+        stations = self._platform.get_stations()
         self.db.stations.delete_many({})
         self.db.stations.insert_many([s.to_dict() for s in stations])
 
@@ -80,7 +80,7 @@ class Recorder:
             return
 
         logger.info("Start fetching programs")
-        programs = self._platforms.get_programs()
+        programs = self._platform.get_programs()
         logger.info(f"Finish fetching {len(programs)} programs")
         self.db.reset_fetched_programs()
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
@@ -115,14 +115,14 @@ class Recorder:
                 program = Program.from_dict(program)
                 filename = os.path.join(
                     self._media_root,
-                    self._platforms.id(program),
+                    self._platform.id(program),
                     program.station_id,
                     fix_to_path(program.name),
-                    self._platforms.get_default_filename(program),
+                    self._platform.get_default_filename(program),
                 )
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 try:
-                    self._platforms.download(program, filename)
+                    self._platform.download(program, filename)
                     recorded = RecordedProgram.from_dict(
                         {
                             **program.to_dict(),
