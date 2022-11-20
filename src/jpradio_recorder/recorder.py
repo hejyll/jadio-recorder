@@ -129,9 +129,9 @@ class Recorder:
                     fix_to_path(program.name),
                     self._platform.get_default_filename(program),
                 )
-                if os.path.exists(filename):
-                    # TODO: remove duplicated programs from reserved_programs
-                    continue
+                # if os.path.exists(filename):
+                #     # TODO: remove duplicated programs from reserved_programs
+                #     continue
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 try:
                     self._platform.download(program, filename)
