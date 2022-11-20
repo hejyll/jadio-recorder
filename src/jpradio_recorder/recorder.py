@@ -92,8 +92,17 @@ class Recorder:
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
-            if not self.db.reserved_programs.find_one(program):
-                if not self.db.recorded_programs.find_one(program):
+            find_keys = [
+                "id",
+                "station_id",
+                "name",
+                "episode_id",
+                "episode_name",
+                "ascii_name",
+            ]
+            find_query = {key: program[key] for key in find_keys}
+            if not self.db.reserved_programs.find_one(find_query):
+                if not self.db.recorded_programs.find_one(find_query):
                     ret.append(Program.from_dict(program))
                     self.db.reserved_programs.insert_one(program)
         logger.info(f"Finish reserving {len(ret)} program(s)")
