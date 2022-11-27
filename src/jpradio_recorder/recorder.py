@@ -81,7 +81,6 @@ class Recorder:
         logger.info("Start fetching programs")
         programs = self._platform.get_programs()
         logger.info(f"Finish fetching {len(programs)} programs")
-        self.db.reset_fetched_programs()
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
         self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
 
@@ -148,3 +147,15 @@ class Recorder:
             self.db.reserved_programs.delete_one({"_id": target_id})
         logger.info(f"Finish recording {len(ret)} program(s)")
         return ret
+
+    def reset_fetched_programs(self) -> None:
+        self.db.fetched_programs.delete_many({})
+
+    def reset_reserved_programs(self) -> None:
+        self.db.reserved_programs.delete_many({})
+
+    def reset_stations(self) -> None:
+        self.db.stations.delete_many({})
+
+    def reset_timestamp(self) -> None:
+        self.db.timestamp.delete_many({})

@@ -16,12 +16,9 @@ def record(
         platform_config=platform_config,
         database_host=database_host,
     ) as recorder:
+        recorder.reset_fetched_programs()
         recorder.fetch_programs()
-        recorder.db.reset_reserved_programs()
+        recorder.reset_reserved_programs()
         recorder.reserve_programs(queries)
         programs = recorder.record_programs()
     return programs
-
-
-def report(programs: List[RecordedProgram]) -> None:
-    ...
