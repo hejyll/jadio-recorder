@@ -4,10 +4,9 @@ import os
 from typing import Any, Dict, List, Optional
 
 import tqdm
-from jpradio import Jpradio, Program, Station
+from jpradio import Jpradio, Program, ProgramQuery, ProgramQueryList, Station
 
 from .database import Database
-from .query import ProgramQuery, ProgramQueryList
 from .util import fix_to_path
 
 logger = logging.getLogger(__name__)
