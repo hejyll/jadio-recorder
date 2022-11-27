@@ -4,7 +4,7 @@ import logging
 
 from jpradio import ProgramQueryList
 
-from . import entrypoints
+from .recorder import Recorder
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
@@ -43,13 +43,16 @@ def main():
 
     with open(args.platform_config_path, "r") as fh:
         platform_config = json.load(fh)
+    queries = ProgramQueryList.from_json(args.queries_path)
 
-    entrypoints.record(
-        ProgramQueryList.from_json(args.queries_path),
+    with Recorder(
         media_root=args.media_root,
         platform_config=platform_config,
         database_host=args.database_host,
-    )
+    ) as recorder:
+        recorder.fetch_programs()
+        recorder.reserve_programs(queries)
+        recorder.record_programs()
 
 
 if __name__ == "__main__":
