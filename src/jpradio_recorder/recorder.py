@@ -55,10 +55,17 @@ class Recorder:
         self._platform.close()
         self.db.close()
 
+    def _update_timestamp(self, name: str) -> None:
+        timestamp = datetime.datetime.now()
+        self.db.timestamp.update_one(
+            {"name": name}, {"$set": {"datetime": timestamp}}, upsert=True
+        )
+
     def fetch_stations(self) -> None:
         stations = self._platform.get_stations()
         self.db.stations.delete_many({})
         self.db.stations.insert_many([s.to_dict() for s in stations])
+        self._update_timestamp("fetch_stations")
 
     def get_stations(self) -> List[Station]:
         ret = [Station.from_dict(s) for s in self.db.stations.find({})]
@@ -68,8 +75,7 @@ class Recorder:
         return ret
 
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
-        timestamp_name = "fetch"
-        timestamp = self.db.timestamp.find_one({"name": timestamp_name})
+        timestamp = self.db.timestamp.find_one({"name": "fetch_programs"})
         if not timestamp:
             force = True
         else:
@@ -82,7 +88,7 @@ class Recorder:
         programs = self._platform.get_programs()
         self.db.fetched_programs.delete_many({})
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
-        self.db.timestamp.insert_one({"name": timestamp_name, "datetime": now})
+        self._update_timestamp("fetch_programs")
         logger.info(f"Finish fetching {len(programs)} programs")
 
     def reserve_programs(self, queries: ProgramQueryList) -> List[Program]:
@@ -105,6 +111,7 @@ class Recorder:
                 if not self.db.recorded_programs.find_one(find_query):
                     ret.append(Program.from_dict(program))
                     self.db.reserved_programs.insert_one(program)
+        self._update_timestamp("reserve_programs")
         logger.info(f"Finish reserving {len(ret)} program(s)")
         return ret
 
@@ -147,5 +154,6 @@ class Recorder:
                 except Exception:
                     pass
             self.db.reserved_programs.delete_one({"_id": target_id})
+        self._update_timestamp("record_programs")
         logger.info(f"Finish recording {len(ret)} program(s)")
         return ret
