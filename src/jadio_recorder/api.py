@@ -16,19 +16,20 @@ app.config["JSON_AS_ASCII"] = False
 __args: argparse.Namespace
 
 
-def _fix_program(program: Dict[str, Any]) -> Dict[str, Any]:
-    program.pop("_id")
-    program.pop("raw_data")
-    if isinstance(program["datetime"], datetime.datetime):
-        program["datetime"] = program["datetime"].strftime("%Y-%m-%d %H:%M")
-    return program
+def _fix_db_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    data.pop("_id", None)
+    data.pop("raw_data", None)
+    for key, value in data.items():
+        if isinstance(value, datetime.datetime):
+            data[key] = value.strftime("%Y-%m-%d %H:%M")
+    return data
 
 
 @app.route("/fetched")
 def fetched():
     with Database(host=__args.database_host) as db:
         programs = db.fetched_programs.find({})
-        ret = [_fix_program(program) for program in programs[:10]]
+        ret = [_fix_db_data(program) for program in programs[:10]]
     return jsonify(ret)
 
 
@@ -36,7 +37,7 @@ def fetched():
 def reserved():
     with Database(host=__args.database_host) as db:
         programs = db.reserved_programs.find({})
-        ret = [_fix_program(program) for program in programs[:10]]
+        ret = [_fix_db_data(program) for program in programs[:10]]
     return jsonify(ret)
 
 
@@ -44,7 +45,15 @@ def reserved():
 def recorded():
     with Database(host=__args.database_host) as db:
         programs = db.recorded_programs.find({})
-        ret = [_fix_program(program) for program in programs[:10]]
+        ret = [_fix_db_data(program) for program in programs[:10]]
+    return jsonify(ret)
+
+
+@app.route("/timestamp")
+def timestamp():
+    with Database(host=__args.database_host) as db:
+        timestamps = db.timestamp.find({})
+        ret = [_fix_db_data(timestamp) for timestamp in timestamps[:10]]
     return jsonify(ret)
 
 
