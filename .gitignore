@@ -4,6 +4,7 @@ dist/
 *.egg-info/
 
 *.json
+*.m4a
 *.mp4
 .DS_Store
 
