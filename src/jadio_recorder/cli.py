@@ -2,7 +2,7 @@ import argparse
 import json
 import logging
 
-from jpradio import ProgramQueryList
+from jadio import ProgramQueryList
 
 from .recorder import Recorder
 
@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--queries-path",
         type=str,
-        default="/data/jpradio-recorder/queries.json",
+        default="/data/jadio-recorder/queries.json",
         help="Queries Json file path",
     )
     parser.add_argument(
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--platform-config-path",
         type=str,
-        default="/data/jpradio-recorder/config.json",
+        default="/data/jadio-recorder/config.json",
         help="Radio platform config Json file path",
     )
     parser.add_argument(

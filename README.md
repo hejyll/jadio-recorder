@@ -1,1 +1,1 @@
-# jpradio-recorder
+# jadio-recorder

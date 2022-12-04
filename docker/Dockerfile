@@ -18,9 +18,9 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* \
     && rm google-chrome-stable_current_amd64.deb
 
-RUN python3 -m pip install git+https://github.com/hejyll/jpradio-recorder
+RUN python3 -m pip install git+https://github.com/hejyll/jadio-recorder
 
-COPY ./jpradio-recorder.sh /etc/cron.daily/
+COPY ./jadio-recorder.sh /etc/cron.daily/
 RUN ln -sf /proc/1/fd/1 /var/log/cron.log
 
 CMD cron -f

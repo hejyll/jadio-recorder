@@ -14,7 +14,7 @@ services:
       - ${SVR_ROOT}/mongo/data/db:/data/db
       - ${SVR_ROOT}/mongo/data/configdb:/data/configdb
 
-  jpradio-recorder:
+  jadio-recorder:
     build:
       context: .
       dockerfile: Dockerfile
@@ -22,5 +22,5 @@ services:
     tty: true
     shm_size: 2g
     volumes:
-      - ${SVR_ROOT}/jpradio-recorder:/data/jpradio-recorder
+      - ${SVR_ROOT}/jadio-recorder:/data/jadio-recorder
       - ${MEDIA_ROOT}:/data/media

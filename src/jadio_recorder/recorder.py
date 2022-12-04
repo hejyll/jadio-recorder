@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 import tqdm
-from jpradio import Jpradio, Program, ProgramQuery, ProgramQueryList, Station
+from jadio import Jadio, Program, ProgramQuery, ProgramQueryList, Station
 
 from .database import Database
 from .util import fix_to_path
@@ -34,7 +34,7 @@ class Recorder:
     ) -> None:
         self._media_root = media_root
 
-        self._platform = Jpradio(platform_config)
+        self._platform = Jadio(platform_config)
         self._database = Database(database_host)
 
     @property
