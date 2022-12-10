@@ -88,7 +88,7 @@ def programs():
 def timestamp():
     with Database(host=__args.database_host) as db:
         timestamps = db.timestamp.find({}, projection={"_id": False})
-        ret = [_fix_db_data(timestamp) for timestamp in timestamps[:10]]
+        ret = [_fix_db_data(timestamp) for timestamp in timestamps]
     return jsonify(ret)
 
 
