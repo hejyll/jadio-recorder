@@ -3,7 +3,10 @@ version: '3.1'
 services:
 
   mongo:
-    image: mongo
+    # use mongo:4.4.6 to avoid following error:
+    # MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!
+    # https://stackoverflow.com/questions/70818543/mongo-db-deployment-not-working-in-kubernetes-because-processor-doesnt-have-avx
+    image: mongo:4.4.6
     restart: always
     ports:
       - 27017:27017
