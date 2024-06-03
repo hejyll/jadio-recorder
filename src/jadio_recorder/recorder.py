@@ -1,38 +1,27 @@
 import datetime
 import logging
-import os
-from typing import Any, Dict, List, Optional
+import shutil
+import tempfile
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import tqdm
 from jadio import Jadio, Program, ProgramQuery, ProgramQueryList, Station
 
 from .database import Database
-from .util import fix_to_path
 
 logger = logging.getLogger(__name__)
-
-
-class RecordedProgram(Program):
-    filename: Optional[str] = None
-    recorded_datetime: Optional[Any] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        ret = super().to_dict()
-        return {
-            **ret,
-            "filename": self.filename,
-            "recorded_datetime": self.recorded_datetime,
-        }
 
 
 class Recorder:
     def __init__(
         self,
-        media_root: str = ".",
+        media_root: Union[str, Path] = ".",
         platform_config: Dict[str, str] = {},
         database_host: Optional[str] = None,
     ) -> None:
-        self._media_root = media_root
+        self._media_root = Path(media_root)
+        self._media_root.mkdir(exist_ok=True)
 
         self._platform = Jadio(platform_config)
         self._database = Database(database_host)
@@ -115,7 +104,7 @@ class Recorder:
         logger.info(f"Finish reserving {len(ret)} program(s)")
         return ret
 
-    def record_programs(self) -> List[RecordedProgram]:
+    def record_programs(self) -> List[Program]:
         logger.info("Start recording programs")
 
         # Only programs that have completed broadcasting can be downloaded.
@@ -129,28 +118,21 @@ class Recorder:
             target_id = program.pop("_id")
             if not self.db.recorded_programs.find_one(program):
                 program = Program.from_dict(program)
-                filename = os.path.join(
-                    self._media_root,
-                    self._platform.id(program),
-                    program.station_id,
-                    fix_to_path(program.name),
-                    self._platform.get_default_filename(program),
-                )
-                # if os.path.exists(filename):
-                #     # TODO: remove duplicated programs from reserved_programs
-                #     continue
-                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                ext = Path(self._platform.get_default_filename(program)).suffix
                 try:
-                    self._platform.download(program, filename)
-                    recorded = RecordedProgram.from_dict(
-                        {
-                            **program.to_dict(),
-                            "filename": filename,
-                            "recorded_datetime": datetime.datetime.now(),
-                        }
-                    )
-                    ret.append(recorded)
-                    self.db.recorded_programs.insert_one(recorded.to_dict())
+                    with tempfile.TemporaryDirectory() as tmp_dir:
+                        # download (record) media file to temporary dir
+                        tmp_media_path = Path(tmp_dir.name) / f"media{ext}"
+                        self._platform.download(program, str(tmp_media_path))
+
+                        # insert recorded program to db
+                        result = self.db.recorded_programs.insert_one(program.to_dict())
+
+                        # move downloaded media file to specified media root
+                        media_path = self._media_root / f"{result.inserted_id}{ext}"
+                        shutil.move(str(tmp_media_path), str(media_path))
+
+                        ret.append(program)
                 except Exception:
                     pass
             self.db.reserved_programs.delete_one({"_id": target_id})
