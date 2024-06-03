@@ -5,7 +5,7 @@ import pymongo.collation
 import pymongo.database
 
 
-class Database:
+class RecorderDatabase:
     def __init__(self, host: Optional[str] = None) -> None:
         host = host or "mongodb://localhost:27017/"
         self._client = pymongo.MongoClient(host)

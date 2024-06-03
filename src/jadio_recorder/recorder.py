@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import logging
 import shutil
@@ -8,7 +10,7 @@ from typing import Dict, List, Optional, Union
 import tqdm
 from jadio import Jadio, Program, ProgramQuery, ProgramQueryList, Station
 
-from .database import Database
+from .database import RecorderDatabase as Database
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class Recorder:
     def db(self) -> Database:
         return self._database
 
-    def __enter__(self) -> "Recorder":
+    def __enter__(self) -> Recorder:
         self.login()
         return self
 

@@ -1,3 +1,3 @@
 from ._version import __version__
-from .database import Database  # NOQA
+from .database import RecorderDatabase  # NOQA
 from .recorder import Recorder  # NOQA
