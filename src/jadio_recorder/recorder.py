@@ -121,6 +121,7 @@ class Recorder:
             if not self.db.recorded_programs.find_one(program):
                 program = Program.from_dict(program)
                 ext = Path(self._platform.get_default_filename(program)).suffix
+                inserted_id = None
                 try:
                     with tempfile.TemporaryDirectory() as tmp_dir:
                         # download (record) media file to temporary dir
@@ -129,14 +130,17 @@ class Recorder:
 
                         # insert recorded program to db
                         result = self.db.recorded_programs.insert_one(program.to_dict())
+                        inserted_id = result.inserted_id
 
                         # move downloaded media file to specified media root
                         media_path = self._media_root / f"{result.inserted_id}{ext}"
                         shutil.move(str(tmp_media_path), str(media_path))
 
                         ret.append(program)
-                except Exception:
-                    pass
+                except Exception as err:
+                    if inserted_id:
+                        self.db.recorded_programs.delete_one({"_id": inserted_id})
+                    logger.error(f"error: {err}\n{program}", stack_info=True)
             self.db.reserved_programs.delete_one({"_id": target_id})
         self._update_timestamp("record_programs")
         logger.info(f"Finish recording {len(ret)} program(s)")
