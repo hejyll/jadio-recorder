@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 import shutil
 import tempfile
@@ -125,7 +126,7 @@ class Recorder:
                 try:
                     with tempfile.TemporaryDirectory() as tmp_dir:
                         # download (record) media file to temporary dir
-                        tmp_media_path = Path(tmp_dir.name) / f"media{ext}"
+                        tmp_media_path = Path(tmp_dir) / f"media{ext}"
                         self._platform.download(program, str(tmp_media_path))
 
                         # insert recorded program to db
@@ -133,9 +134,16 @@ class Recorder:
                         inserted_id = result.inserted_id
 
                         # move downloaded media file to specified media root
-                        media_path = self._media_root / f"{result.inserted_id}{ext}"
-                        shutil.move(str(tmp_media_path), str(media_path))
+                        save_root = self._media_root / f"{inserted_id}"
+                        save_root.mkdir(exist_ok=True)
+                        shutil.move(str(tmp_media_path), str(save_root / f"media{ext}"))
 
+                        # save program information as JSON file
+                        with open(str(save_root / f"program.json"), "w") as fh:
+                            data = program.to_dict(serializable=True)
+                            json.dump(data, fh, indent=2, ensure_ascii=False)
+
+                        logger.info(f"Save media and program file to {save_root}")
                         ret.append(program)
                 except Exception as err:
                     if inserted_id:
