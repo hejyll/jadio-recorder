@@ -1,38 +1,30 @@
+from __future__ import annotations
+
 import datetime
+import json
 import logging
-import os
-from typing import Any, Dict, List, Optional
+import shutil
+import tempfile
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import tqdm
 from jadio import Jadio, Program, ProgramQuery, ProgramQueryList, Station
 
-from .database import Database
-from .util import fix_to_path
+from .database import RecorderDatabase as Database
 
 logger = logging.getLogger(__name__)
-
-
-class RecordedProgram(Program):
-    filename: Optional[str] = None
-    recorded_datetime: Optional[Any] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        ret = super().to_dict()
-        return {
-            **ret,
-            "filename": self.filename,
-            "recorded_datetime": self.recorded_datetime,
-        }
 
 
 class Recorder:
     def __init__(
         self,
-        media_root: str = ".",
+        media_root: Union[str, Path] = ".",
         platform_config: Dict[str, str] = {},
         database_host: Optional[str] = None,
     ) -> None:
-        self._media_root = media_root
+        self._media_root = Path(media_root)
+        self._media_root.mkdir(exist_ok=True)
 
         self._platform = Jadio(platform_config)
         self._database = Database(database_host)
@@ -41,7 +33,7 @@ class Recorder:
     def db(self) -> Database:
         return self._database
 
-    def __enter__(self) -> "Recorder":
+    def __enter__(self) -> Recorder:
         self.login()
         return self
 
@@ -115,7 +107,7 @@ class Recorder:
         logger.info(f"Finish reserving {len(ret)} program(s)")
         return ret
 
-    def record_programs(self) -> List[RecordedProgram]:
+    def record_programs(self) -> List[Program]:
         logger.info("Start recording programs")
 
         # Only programs that have completed broadcasting can be downloaded.
@@ -129,30 +121,34 @@ class Recorder:
             target_id = program.pop("_id")
             if not self.db.recorded_programs.find_one(program):
                 program = Program.from_dict(program)
-                filename = os.path.join(
-                    self._media_root,
-                    self._platform.id(program),
-                    program.station_id,
-                    fix_to_path(program.name),
-                    self._platform.get_default_filename(program),
-                )
-                # if os.path.exists(filename):
-                #     # TODO: remove duplicated programs from reserved_programs
-                #     continue
-                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                ext = Path(self._platform.get_default_filename(program)).suffix
+                inserted_id = None
                 try:
-                    self._platform.download(program, filename)
-                    recorded = RecordedProgram.from_dict(
-                        {
-                            **program.to_dict(),
-                            "filename": filename,
-                            "recorded_datetime": datetime.datetime.now(),
-                        }
-                    )
-                    ret.append(recorded)
-                    self.db.recorded_programs.insert_one(recorded.to_dict())
-                except Exception:
-                    pass
+                    with tempfile.TemporaryDirectory() as tmp_dir:
+                        # download (record) media file to temporary dir
+                        tmp_media_path = Path(tmp_dir) / f"media{ext}"
+                        self._platform.download(program, str(tmp_media_path))
+
+                        # insert recorded program to db
+                        result = self.db.recorded_programs.insert_one(program.to_dict())
+                        inserted_id = result.inserted_id
+
+                        # move downloaded media file to specified media root
+                        save_root = self._media_root / f"{inserted_id}"
+                        save_root.mkdir(exist_ok=True)
+                        shutil.move(str(tmp_media_path), str(save_root / f"media{ext}"))
+
+                        # save program information as JSON file
+                        with open(str(save_root / f"program.json"), "w") as fh:
+                            data = program.to_dict(serializable=True)
+                            json.dump(data, fh, indent=2, ensure_ascii=False)
+
+                        logger.info(f"Save media and program file to {save_root}")
+                        ret.append(program)
+                except Exception as err:
+                    if inserted_id:
+                        self.db.recorded_programs.delete_one({"_id": inserted_id})
+                    logger.error(f"error: {err}\n{program}", stack_info=True)
             self.db.reserved_programs.delete_one({"_id": target_id})
         self._update_timestamp("record_programs")
         logger.info(f"Finish recording {len(ret)} program(s)")
