@@ -140,7 +140,7 @@ class Recorder:
 
                         # save program information as JSON file
                         with open(str(save_root / f"program.json"), "w") as fh:
-                            data = program.to_dict(serializable=True)
+                            data = program.to_dict(serialize=True)
                             json.dump(data, fh, indent=2, ensure_ascii=False)
 
                         logger.info(f"Save media and program file to {save_root}")
