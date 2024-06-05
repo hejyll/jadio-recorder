@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 
 import pymongo
@@ -10,7 +12,7 @@ class RecorderDatabase:
         host = host or "mongodb://localhost:27017/"
         self._client = pymongo.MongoClient(host)
 
-    def __enter__(self) -> "Database":
+    def __enter__(self) -> RecorderDatabase:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
