@@ -134,8 +134,10 @@ class Recorder:
                         inserted_id = result.inserted_id
 
                         # move downloaded media file to specified media root
-                        save_root = self._media_root / f"{inserted_id}"
-                        save_root.mkdir(exist_ok=True)
+                        save_root = self._media_root.joinpath(
+                            program.platform_id, program.station_id, str(inserted_id)
+                        )
+                        save_root.mkdir(parents=True, exist_ok=True)
                         shutil.move(str(tmp_media_path), str(save_root / f"media{ext}"))
 
                         # save program information as JSON file
