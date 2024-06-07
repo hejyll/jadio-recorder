@@ -16,16 +16,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--queries-path",
         type=str,
-        default="/data/jadio-recorder/queries.json",
+        default="./svr/jadio-recorder/queries.json",
         help="Queries Json file path",
     )
     parser.add_argument(
-        "--media-root", type=str, default="/data/media", help="Media root directory"
+        "--media-root", type=str, default="./media", help="Media root directory"
     )
     parser.add_argument(
         "--platform-config-path",
         type=str,
-        default="/data/jadio-recorder/config.json",
+        default="./svr/jadio-recorder/config.json",
         help="Radio platform config Json file path",
     )
     parser.add_argument(
@@ -33,6 +33,11 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="mongodb://localhost:27017/",
         help="MongoDB host",
+    )
+    parser.add_argument(
+        "--force-fetch",
+        action="store_true",
+        help="Force fetch programs from platforms",
     )
     args = parser.parse_args()
     return args
@@ -50,7 +55,7 @@ def main():
         platform_config=platform_config,
         database_host=args.database_host,
     ) as recorder:
-        recorder.fetch_programs()
+        recorder.fetch_programs(force=args.force_fetch)
         recorder.reserve_programs(queries)
         recorder.record_programs()
 
