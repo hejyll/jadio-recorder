@@ -33,16 +33,17 @@ def add_argument_insert_feed_config(parser: argparse.ArgumentParser):
 def add_argument_record_programs(parser: argparse.ArgumentParser):
     parser.set_defaults(handler=record_programs)
     parser.add_argument(
-        "--media-root", type=Path, default="./media", help="Media root directory"
-    )
-    parser.add_argument(
         "--force-fetch", action="store_true", help="Force fetch programs from services"
     )
     parser.add_argument(
         "--service-config-path",
         type=Path,
+        # TODO: fix default path
         default="./svr/jadio-recorder/config.json",
         help="Radio service config Json file path",
+    )
+    parser.add_argument(
+        "--media-root", type=Path, default="./media", help="Media root directory"
     )
 
 
@@ -67,14 +68,30 @@ def parse_args() -> argparse.Namespace:
 
     subparsers = parser.add_subparsers()
 
-    name_and_fn_pairs = [
-        ("insert-record-config", add_argument_insert_record_config),
-        ("insert-feed-config", add_argument_insert_feed_config),
-        ("record-programs", add_argument_record_programs),
-        ("update-feeds", add_argument_update_feeds),
+    commands = [
+        (
+            "reserve",
+            add_argument_insert_record_config,
+            "Reserve radio program recordings.",
+        ),
+        (
+            "record",
+            add_argument_record_programs,
+            "Record reserved radio programs.",
+        ),
+        (
+            "group",
+            add_argument_insert_feed_config,
+            "Group recorded radio programs to compose Podcast RSS feeds.",
+        ),
+        (
+            "feed",
+            add_argument_update_feeds,
+            "Create Podcast RSS feeds of recorded radio programs.",
+        ),
     ]
-    for name, add_arument_fn in name_and_fn_pairs:
-        sub_parser = subparsers.add_parser(name, help=f"see `{name} -h`")
+    for name, add_arument_fn, help in commands:
+        sub_parser = subparsers.add_parser(name, help=help)
         add_arument_fn(sub_parser)
         add_argument_common(sub_parser)
 
