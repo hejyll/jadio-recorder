@@ -57,7 +57,7 @@ class Recorder(DatabaseHandler):
         if not timestamp:
             force = True
         else:
-            timestamp = timestamp["datetime"]
+            timestamp = timestamp["timestamp"]
         now = datetime.datetime.now()
         if not force and timestamp + datetime.timedelta(days=interval_days) > now:
             return
