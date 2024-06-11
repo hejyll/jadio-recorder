@@ -10,49 +10,32 @@ from typing import Dict, List, Optional, Union
 import tqdm
 from jadio import Jadio, Program
 
-from .config import RecordConfig
-from .database import RecorderDatabase as Database
-from .query import ProgramQuery, queries_to_mongo_format
+from ..configs import RecordConfig
+from ..query import ProgramQuery, queries_to_mongo_format
+from .base import DatabaseHandler
 
 logger = logging.getLogger(__name__)
 
 
-class Recorder:
+class Recorder(DatabaseHandler):
     def __init__(
         self,
-        media_root: Union[str, Path] = ".",
         service_config: Dict[str, str] = {},
-        database_host: Optional[str] = None,
+        media_root: Union[str, Path] = ".",
+        db_host: Optional[str] = None,
+        db_name: str = "jadio",
     ) -> None:
+        super().__init__(db_host, db_name)
         self._media_root = Path(media_root)
-        self._media_root.mkdir(exist_ok=True)
-
+        self._media_root.mkdir(parents=True, exist_ok=True)
         self._service = Jadio(service_config)
-        self._database = Database(database_host)
-
-    @property
-    def db(self) -> Database:
-        return self._database
-
-    def __enter__(self) -> Recorder:
-        self.login()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.close()
 
     def login(self) -> None:
         self._service.login()
 
     def close(self) -> None:
+        super().close()
         self._service.close()
-        self.db.close()
-
-    def _update_timestamp(self, name: str) -> None:
-        timestamp = datetime.datetime.now()
-        self.db.timestamp.update_one(
-            {"name": name}, {"$set": {"datetime": timestamp}}, upsert=True
-        )
 
     def insert_config(self, config: RecordConfig, overwrite: bool = False) -> None:
         config = config.to_dict()
