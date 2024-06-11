@@ -7,8 +7,7 @@ from typing import Any, Dict, List, Optional, TypeVar, Union
 from dataclasses_json import DataClassJsonMixin
 
 T = TypeVar("T")
-Condition = Optional[Union[T, Dict[str, Union[T, List[T]]]]]
-MongoQueryDict = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+ConditionT = Union[T, List[T]]
 
 __all__ = [
     "ProgramQuery",
@@ -16,27 +15,87 @@ __all__ = [
 ]
 
 
+def _to_list(x: Union[T, List[T]]) -> List[T]:
+    return [x] if not isinstance(x, list) else x
+
+
 @dataclass
 class ProgramQuery(DataClassJsonMixin):
-    service_id: Condition[str] = None
-    station_id: Condition[str] = None
-    program_id: Condition[int] = None
-    episode_id: Condition[int] = None
-    pub_date: Condition[dt.datetime] = None
-    duration: Condition[int] = None
-    program_title: Condition[str] = None
-    episode_title: Condition[str] = None
-    description: Condition[str] = None
-    information: Condition[str] = None
-    link_url: Condition[str] = None
-    performers: Condition[List[str]] = None
-    guests: Condition[List[str]] = None
-    is_video: Condition[bool] = None
+    """Class for generating queries to find radio programs registered in MongoDB.
 
-    def to_mongo_format(self) -> MongoQueryDict:
-        ret = [{key: cond} for key, cond in self.to_dict().items() if cond]
-        return {"$and": ret}
+    Attributes:
+        service_id (list of str): Specify ids of services to be searched.
+        station_id (list of str): Specify ids of stations to be searched.
+        program_id (list of str): Specify ids of stations to be searched.
+                persons (list of str): Specify names of personalities or guests to be searched.
+        words (list of str): Specify the words to be searched.
+            This is used to search for radio titles and description fields.
+        datetime_range (list of `dt.datetime`): Specify the datetime range to be searched.
+            If only one date is specified, then programs after that date are searched.
+    """
+
+    service_id: Optional[ConditionT[Union[int, str]]] = None
+    station_id: Optional[ConditionT[Union[int, str]]] = None
+    program_id: Optional[ConditionT[Union[int, str]]] = None
+    episode_id: Optional[ConditionT[Union[int, str]]] = None
+    pub_date: Optional[ConditionT[dt.datetime]] = None
+    duration: Optional[ConditionT[Union[int, float]]] = None
+    keywords: Optional[ConditionT[str]] = None
+    is_video: Optional[ConditionT[bool]] = None
+
+    def to_mongo_format(self) -> Dict[str, Any]:
+        and_cond = []
+        if self.service_id:
+            and_cond.append({"service_id": {"$in": _to_list(self.service_id)}})
+        if self.station_id:
+            and_cond.append({"station_id": {"$in": _to_list(self.station_id)}})
+        if self.program_id:
+            and_cond.append({"program_id": {"$in": _to_list(self.program_id)}})
+        if self.episode_id:
+            and_cond.append({"episode_id": {"$in": _to_list(self.episode_id)}})
+        if self.pub_date:
+            key = "pub_date"
+            queries = _to_list(self.pub_date)
+            if len(queries) > 2:
+                raise ValueError(f"len({key}) must be less than 2.")
+            if len(queries) == 1:
+                and_cond.append({key: {"$lte": queries[0]}})
+            elif queries[0] is None and queries[1] is None:
+                pass
+            elif queries[0] is None:
+                and_cond.append({key: {"$lt": queries[1]}})
+            elif queries[1] is None:
+                and_cond.append({key: {"$gte": queries[0]}})
+            else:
+                and_cond.append({key: {"$gte": queries[0], "$lt": queries[1]}})
+        if self.duration:
+            key = "duration"
+            queries = _to_list(self.pub_date)
+            if len(queries) > 2:
+                raise ValueError(f"len({key}) must be less than 2.")
+            if len(queries) == 1:
+                and_cond.append({key: {"$lte": queries[0]}})
+            elif queries[0] is None and queries[1] is None:
+                pass
+            elif queries[0] is None:
+                and_cond.append({key: {"$lt": queries[0]}})
+            elif queries[1] is None:
+                and_cond.append({key: {"$gte": queries[0]}})
+            else:
+                and_cond.append({key: {"$gte": queries[0], "$lt": queries[1]}})
+        if self.keywords:
+            queries = _to_list(self.keywords)
+            keys = ["performers", "guests"]
+            cond = [{key: {"$in": queries}} for key in keys]
+            keys = ["program_title", "episode_title", "description", "information"]
+            cond = sum(
+                [[{key: {"$regex": query}} for query in queries] for key in keys], cond
+            )
+            and_cond.append({"$or": cond})
+        if not and_cond:
+            return {}
+        return {"$and": and_cond}
 
 
-def queries_to_mongo_format(queries: List[ProgramQuery]) -> MongoQueryDict:
+def queries_to_mongo_format(queries: List[ProgramQuery]) -> Dict[str, List[Any]]:
     return {"$or": [query.to_mongo_format() for query in queries]}

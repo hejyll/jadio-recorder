@@ -98,9 +98,8 @@ class Recorder:
         logger.info("Start recording programs")
 
         # Only programs that have completed broadcasting can be downloaded.
-        date_query = ProgramQuery(
-            pub_date={"$lt": datetime.datetime.now() - datetime.timedelta(hours=2)},
-        )
+        lt_date = datetime.datetime.now() - datetime.timedelta(hours=2)
+        date_query = ProgramQuery(pub_date=[None, lt_date])
         target_programs = self.db.reserved_programs.find(date_query.to_mongo_format())
 
         ret = []
