@@ -2,9 +2,8 @@ import argparse
 import json
 import logging
 
-from jadio import ProgramQueryList
-
-from .recorder import Recorder
+from jadio_recorder.query import ProgramQuery
+from jadio_recorder.recorder import Recorder
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
@@ -23,10 +22,10 @@ def parse_args() -> argparse.Namespace:
         "--media-root", type=str, default="./media", help="Media root directory"
     )
     parser.add_argument(
-        "--platform-config-path",
+        "--service-config-path",
         type=str,
         default="./svr/jadio-recorder/config.json",
-        help="Radio platform config Json file path",
+        help="Radio service config Json file path",
     )
     parser.add_argument(
         "--database-host",
@@ -37,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--force-fetch",
         action="store_true",
-        help="Force fetch programs from platforms",
+        help="Force fetch programs from services",
     )
     args = parser.parse_args()
     return args
@@ -46,13 +45,15 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
 
-    with open(args.platform_config_path, "r") as fh:
-        platform_config = json.load(fh)
-    queries = ProgramQueryList.from_json(args.queries_path)
+    with open(args.service_config_path, "r") as fh:
+        service_config = json.load(fh)
+    with open(args.queries_path, "r") as fh:
+        data = fh.read()
+        queries = ProgramQuery.schema().loads(data, many=True)
 
     with Recorder(
         media_root=args.media_root,
-        platform_config=platform_config,
+        service_config=service_config,
         database_host=args.database_host,
     ) as recorder:
         recorder.fetch_programs(force=args.force_fetch)
