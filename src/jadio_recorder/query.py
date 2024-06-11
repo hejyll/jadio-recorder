@@ -24,14 +24,13 @@ class ProgramQuery(DataClassJsonMixin):
     """Class for generating queries to find radio programs registered in MongoDB.
 
     Attributes:
-        service_id (list of str): Specify ids of services to be searched.
-        station_id (list of str): Specify ids of stations to be searched.
-        program_id (list of str): Specify ids of stations to be searched.
-                persons (list of str): Specify names of personalities or guests to be searched.
-        words (list of str): Specify the words to be searched.
-            This is used to search for radio titles and description fields.
-        datetime_range (list of `dt.datetime`): Specify the datetime range to be searched.
-            If only one date is specified, then programs after that date are searched.
+        service_id (condition of (int or str)):
+        station_id (condition of (int or str)):
+        program_id (condition of (int or str)):
+        program_id (condition of (int or str)):
+        pub_date (condition of `datetime.datetime`):
+        keywords (condition of str):
+        is_video (condition of bool):
     """
 
     service_id: Optional[ConditionT[Union[int, str]]] = None

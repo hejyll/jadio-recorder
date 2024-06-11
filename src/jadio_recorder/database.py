@@ -16,7 +16,6 @@ class JadioDatabase:
         host = host or "mongodb://localhost:27017/"
         self._client = pymongo.MongoClient(host)
         self._name = name
-        self._name = "recorder"  # for dev
 
     def __enter__(self) -> JadioDatabase:
         return self

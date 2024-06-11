@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import copy
 import datetime as dt
+import logging
 import os
 import urllib
 import urllib.parse
 from dataclasses import dataclass
-from logging import getLogger
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import feedgen.entry
 import feedgen.feed
+import pytz
 from bson import ObjectId
 from dataclasses_json import DataClassJsonMixin
 from jadio import Program
@@ -20,7 +22,7 @@ PathLike = Union[str, Path]
 
 RADIKO_LINK = "https://radiko.jp/"
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _media_path_to_duration(path: Union[str, Path]) -> int:
@@ -39,6 +41,11 @@ def _media_path_to_duration(path: Union[str, Path]) -> int:
     else:
         raise ValueError(f"{path.suffix} is not supported file type")
     return media.info.length
+
+
+def _fix_pub_data(pub_date: dt.datetime, zone: str = "Asia/Tokyo") -> str:
+    pub_date = copy.deepcopy(pub_date)
+    return pub_date.replace(tzinfo=pytz.timezone(zone))
 
 
 def _path_to_enclosure_url(path: Path, path_root: Path, base_url: str) -> str:
@@ -126,12 +133,12 @@ class PodcastItem(DataClassJsonMixin):
     def from_program(
         cls,
         program: Program,
-        program_id: ObjectId,
+        object_id: ObjectId,
         base_url: str,
         media_root: Path,
     ) -> PodcastItem:
         media_dir = media_root.joinpath(
-            program.service_id, program.station_id, str(program_id)
+            program.service_id, program.program_id, str(object_id)
         )
         media_path = list((media_dir).glob("media.*"))[0]
         duration = program.duration or _media_path_to_duration(media_path)
@@ -157,8 +164,8 @@ class PodcastItem(DataClassJsonMixin):
         )
         entry.guid(self.guid, permalink=False)
 
-        entry.pubDate(self.pub_date)
-        entry.description(self.description)
+        entry.pubDate(_fix_pub_data(self.pub_date))
+        entry.description(self.description or " ")
         entry.podcast.itunes_duration(self.itunes_duration)
         entry.link(href=self.link or RADIKO_LINK)
         # WORKAROUND: avoid file format error
@@ -215,7 +222,7 @@ class PodcastChannel(DataClassJsonMixin):
         ret.load_extension("podcast")
 
         ret.title(self.title)
-        ret.description(self.description)
+        ret.description(self.description or " ")
         # WORKAROUND: avoid file format error
         ret.podcast._PodcastExtension__itunes_image = self.itunes_image
         ret.language(self.language)
@@ -279,12 +286,12 @@ class PodcastRssFeedGenCreator:
             unique_pairs = []
             prev_pub_date = None
             prev_episode_id = None
-            for program, program_id in program_and_id_pairs:
+            for program, object_id in program_and_id_pairs:
                 if (
                     prev_pub_date != program.pub_date
                     and prev_episode_id != program.episode_id
                 ):
-                    unique_pairs.append((program, program_id))
+                    unique_pairs.append((program, object_id))
                 prev_pub_date = program.pub_date
                 prev_episode_id = program.episode_id
             num_programs = len(program_and_id_pairs)
@@ -301,15 +308,14 @@ class PodcastRssFeedGenCreator:
 
         # create items of RSS feed
         feed_generator = channel.to_feed_generator()
-        for program, program_id in program_and_id_pairs:
+        for program, object_id in program_and_id_pairs:
             try:
                 item = PodcastItem.from_program(
-                    program, program_id, self.base_url, self.media_root
+                    program, object_id, self.base_url, self.media_root
                 )
                 # item order has been already controled
                 item.set_feed_entry(feed_generator.add_entry(order="append"))
             except Exception as err:
                 logger.error(f"error: {err}\n{program}", stack_info=True)
-                raise err
 
         return feed_generator
