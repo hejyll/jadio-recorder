@@ -26,6 +26,10 @@ class RecorderDatabase:
         return self._client.get_database("recorder")
 
     @property
+    def record_configs(self) -> pymongo.collation.Collation:
+        return self._database.get_collection("record_configs")
+
+    @property
     def fetched_programs(self) -> pymongo.collation.Collation:
         return self._database.get_collection("fetched_programs")
 

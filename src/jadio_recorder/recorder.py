@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Union
 import tqdm
 from jadio import Jadio, Program
 
+from .config import RecordConfig
 from .database import RecorderDatabase as Database
 from .query import ProgramQuery, queries_to_mongo_format
 
@@ -53,6 +54,21 @@ class Recorder:
             {"name": name}, {"$set": {"datetime": timestamp}}, upsert=True
         )
 
+    def insert_config(self, config: RecordConfig, overwrite: bool = False) -> None:
+        config = config.to_dict()
+        if self.db.record_configs.find_one({"query": config["query"]}):
+            if not overwrite:
+                logger.info(
+                    "skip inserting config because the same query already exists"
+                )
+                return
+            else:
+                logger.info("overwrite config because the same query already exists")
+                self.db.record_configs.delete_one({"query": config["query"]})
+        self.db.record_configs.update_one(config, {"$set": config}, upsert=True)
+        self._update_timestamp("insert_config")
+        logger.info("Finish inserting config")
+
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
         timestamp = self.db.timestamp.find_one({"name": "fetch_programs"})
         if not timestamp:
@@ -70,10 +86,14 @@ class Recorder:
         self._update_timestamp("fetch_programs")
         logger.info(f"Finish fetching {len(programs)} programs")
 
-    def reserve_programs(self, queries: List[ProgramQuery]) -> List[Program]:
+    def reserve_programs(self) -> List[Program]:
         logger.info("Start reserving programs")
         self.db.reserved_programs.delete_many({})
-        query = queries_to_mongo_format(queries)
+        configs = list(self.db.record_configs.find({}))
+        if len(configs) == 0:
+            return []
+        configs = [RecordConfig.from_dict(config) for config in configs]
+        query = queries_to_mongo_format([config.query for config in configs])
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")

@@ -2,8 +2,9 @@ import argparse
 import json
 import logging
 
-from jadio_recorder.query import ProgramQuery
-from jadio_recorder.recorder import Recorder
+from .config import RecordConfig
+from .query import ProgramQuery
+from .recorder import Recorder
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
@@ -51,13 +52,19 @@ def main():
         data = fh.read()
         queries = ProgramQuery.schema().loads(data, many=True)
 
+    # TODO:
+    configs = [RecordConfig(query) for query in queries]
+
     with Recorder(
         media_root=args.media_root,
         service_config=service_config,
         database_host=args.database_host,
     ) as recorder:
+        for config in configs:
+            recorder.insert_config(config)
+
         recorder.fetch_programs(force=args.force_fetch)
-        recorder.reserve_programs(queries)
+        recorder.reserve_programs()
         recorder.record_programs()
 
 
