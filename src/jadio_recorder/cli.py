@@ -55,7 +55,10 @@ def add_argument_update_feeds(parser: argparse.ArgumentParser):
         "--media-root", type=Path, default="./media", help="Media root directory"
     )
     parser.add_argument(
-        "--http-host", type=str, default="http://localhost", help="Base URL of httpd"
+        "--http-host",
+        type=str,
+        default="http://localhost",
+        help="HTTP host for RSS feed",
     )
 
 

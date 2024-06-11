@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-import copy
 import datetime as dt
 import os
 import urllib
 import urllib.parse
 from dataclasses import dataclass
-from enum import Enum
 from logging import getLogger
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import feedgen.entry
 import feedgen.feed
-import pytz
 from bson import ObjectId
+from dataclasses_json import DataClassJsonMixin
 from jadio import Program
 from mutagen import mp3, mp4
-from serdescontainer import BaseContainer
 
 PathLike = Union[str, Path]
 
@@ -42,12 +39,6 @@ def _media_path_to_duration(path: Union[str, Path]) -> int:
     else:
         raise ValueError(f"{path.suffix} is not supported file type")
     return media.info.length
-
-
-def _datetime_to_pub_data(datetime: dt.datetime, zone: str = "Asia/Tokyo") -> str:
-    datetime = copy.deepcopy(datetime)
-    datetime = datetime.replace(tzinfo=pytz.timezone(zone))
-    return datetime.strftime("%a, %d %b %Y %H:%M:%S %z")
 
 
 def _path_to_enclosure_url(path: Path, path_root: Path, base_url: str) -> str:
@@ -77,7 +68,7 @@ def _path_to_enclosure_type(path: Path, is_video: bool) -> str:
 
 
 @dataclass
-class Enclosure:
+class Enclosure(DataClassJsonMixin):
     url: str
     length: Optional[int] = None  # file size in bytes
     type: Optional[str] = None
@@ -98,25 +89,14 @@ class Enclosure:
         )
 
 
-class EpisodeType(Enum):
-    FULL: str = "full"
-    TRAILER: str = "trailer"
-    BONUS: str = "bonus"
-
-
 @dataclass
-class ItunesCategory(BaseContainer):
+class ItunesCategory(DataClassJsonMixin):
     cat: Optional[str] = None
     sub: Optional[str] = None
 
 
-class ItunesType(Enum):
-    EPISODIC: str = "episodic"
-    SERIAL: str = "serial"
-
-
 @dataclass
-class PodcastItem(BaseContainer):
+class PodcastItem(DataClassJsonMixin):
     """
     See: https://help.apple.com/itc/podcasts_connect/#/itcb54353390
     """
@@ -138,13 +118,9 @@ class PodcastItem(BaseContainer):
     itunes_title: Optional[str] = None
     itunes_episode: Optional[int] = None
     itunes_season: Optional[int] = None
-    itunes_episode_type: EpisodeType = EpisodeType.FULL
+    itunes_episode_type: str = "full"
     podcast_transcript: Optional[str] = None
     itunes_block: bool = False
-
-    def custom_types() -> List[Any]:
-        """For BaseContainer.from_dict"""
-        return [Enclosure, EpisodeType]
 
     @classmethod
     def from_program(
@@ -155,20 +131,20 @@ class PodcastItem(BaseContainer):
         media_root: Path,
     ) -> PodcastItem:
         media_dir = media_root.joinpath(
-            program.platform_id, program.station_id, str(program_id)
+            program.service_id, program.station_id, str(program_id)
         )
         media_path = list((media_dir).glob("media.*"))[0]
         duration = program.duration or _media_path_to_duration(media_path)
         return cls(
-            title=program.episode_name,
+            title=program.episode_title,
             enclosure=Enclosure.from_path(
                 media_path, program.is_video, base_url, media_root
             ),
             guid=str(program.episode_id),
-            pub_date=program.datetime,
+            pub_date=program.pub_date,
             description=program.information or program.description,
             itunes_duration=int(duration),
-            link=program.url,
+            link=program.link_url,
             itunes_image=program.image_url,
         )
 
@@ -181,8 +157,7 @@ class PodcastItem(BaseContainer):
         )
         entry.guid(self.guid, permalink=False)
 
-        if self.pub_date:
-            entry.pubDate(_datetime_to_pub_data(self.pub_date))
+        entry.pubDate(self.pub_date)
         entry.description(self.description)
         entry.podcast.itunes_duration(self.itunes_duration)
         entry.link(href=self.link or RADIKO_LINK)
@@ -193,13 +168,13 @@ class PodcastItem(BaseContainer):
         entry.podcast.itunes_title(self.itunes_title)
         entry.podcast.itunes_episode(self.itunes_episode)
         entry.podcast.itunes_season(self.itunes_season)
-        entry.podcast.itunes_episode_type(self.itunes_episode_type.value)
+        entry.podcast.itunes_episode_type(self.itunes_episode_type)
         # entry.podcast.itunes_transcript(self.podcast_transcript)
         entry.podcast.itunes_block(self.itunes_block)
 
 
 @dataclass
-class PodcastChannel(BaseContainer):
+class PodcastChannel(DataClassJsonMixin):
     """
     See: https://help.apple.com/itc/podcasts_connect/#/itcb54353390
     """
@@ -218,24 +193,20 @@ class PodcastChannel(BaseContainer):
 
     # Situational tags
     itunes_title: Optional[str] = None
-    itunes_type: ItunesType = ItunesType.EPISODIC
+    itunes_type: str = "episodic"
     copyright: Optional[str] = None
     itunes_new_feed_url: Optional[str] = None
     itunes_block: bool = False
     itunes_complete: bool = False
 
-    def custom_types() -> List[Any]:
-        """For BaseContainer.from_dict"""
-        return [ItunesCategory, ItunesType]
-
     @classmethod
     def from_program(cls, program: Program) -> PodcastChannel:
         return PodcastChannel(
-            title=program.name,
+            title=program.program_title,
             description=program.description or program.information,
             itunes_image=program.image_url,
-            itunes_author=program.platform_id,
-            link=program.url,
+            itunes_author=program.service_id,
+            link=program.link_url,
             copyright=program.copyright,
         )
 
@@ -256,7 +227,7 @@ class PodcastChannel(BaseContainer):
         ret.link(href=self.link or RADIKO_LINK)
 
         # ret.podcast.itunes_title(self.itunes_title)
-        ret.podcast.itunes_type(self.itunes_type.value)
+        ret.podcast.itunes_type(self.itunes_type)
         ret.copyright(self.copyright)
         ret.podcast.itunes_new_feed_url(self.itunes_new_feed_url)
         ret.podcast.itunes_block(self.itunes_block)
@@ -282,22 +253,22 @@ class PodcastRssFeedGenCreator:
         remove_duplicates: bool = True,
     ) -> feedgen.feed.FeedGenerator:
         if sort_by is not None:
-            available_sort_by = ["datetime", "episode_id"]
+            available_sort_by = ["pub_date", "episode_id"]
             if sort_by not in available_sort_by:
                 raise ValueError(
                     f"'{sort_by}' is not supported sort_by. "
-                    "Please select 'datetime' or 'eposode_id'"
+                    "Please select 'pub_date' or 'eposode_id'"
                 )
         elif len(set(program.station_id for program, _ in program_and_id_pairs)) > 1:
             # do not sort by episode_id because multiple platforms may be mixed
-            sort_by = "datetime"
-        elif program_and_id_pairs[0][0].platform_id in ["onsen.ag", "hibiki-radio.jp"]:
+            sort_by = "pub_date"
+        elif program_and_id_pairs[0][0].service_id in ["onsen.ag", "hibiki-radio.jp"]:
             # if platform is onsen.ag or hibiki-radio.jp, it is best to sort by episode_id.
             sort_by = "episode_id"
         else:
             # if station_id is unified with stations of radiko.jp,
-            # it is best to sort by datetime.
-            sort_by = "datetime"
+            # it is best to sort by pub_date.
+            sort_by = "pub_date"
         program_and_id_pairs = sorted(
             program_and_id_pairs,
             key=lambda x: getattr(x[0], sort_by),
@@ -306,15 +277,15 @@ class PodcastRssFeedGenCreator:
 
         if remove_duplicates:
             unique_pairs = []
-            prev_datetime = None
+            prev_pub_date = None
             prev_episode_id = None
             for program, program_id in program_and_id_pairs:
                 if (
-                    prev_datetime != program.datetime
+                    prev_pub_date != program.pub_date
                     and prev_episode_id != program.episode_id
                 ):
                     unique_pairs.append((program, program_id))
-                prev_datetime = program.datetime
+                prev_pub_date = program.pub_date
                 prev_episode_id = program.episode_id
             num_programs = len(program_and_id_pairs)
             if num_programs != len(unique_pairs):

@@ -77,7 +77,7 @@ class Feeder(DatabaseHandler):
     def update_feeds(self, force: bool = False) -> List[FeedConfig]:
         last_timestamp = self.db.timestamp.find_one({"name": "update_feeds"})
         if last_timestamp:
-            last_timestamp = last_timestamp["datetime"]
+            last_timestamp = last_timestamp["timestamp"]
 
         configs = list(self.db.feed_configs.find({}))
         ret = []
