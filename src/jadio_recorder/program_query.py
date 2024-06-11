@@ -24,13 +24,24 @@ class ProgramQuery(DataClassJsonMixin):
     """Class for generating queries to find radio programs registered in MongoDB.
 
     Attributes:
-        service_id (condition of (int or str)):
-        station_id (condition of (int or str)):
-        program_id (condition of (int or str)):
-        program_id (condition of (int or str)):
-        pub_date (condition of `datetime.datetime`):
-        keywords (condition of str):
-        is_video (condition of bool):
+        service_id (condition of (int or str)): Search condition for service ID(s).
+        station_id (condition of (int or str)): Search condition for station ID(s).
+        program_id (condition of (int or str)): Search condition for program ID(s).
+        episode_id (condition of (int or str)): Search condition for episode ID(s).
+        pub_date (condition of `datetime.datetime`): Search condition for publication date.
+            The search condition changes as follows depending on how the value is given.
+            * single value or [value]: condition <= value
+            * [value0, value1]: value0 <= condition < value1
+            * [None, value]: condition < value
+            * [value, None]: value <= condition
+        duration (condition of (int or float)): Search condition for duration.
+            The search condition changes as follows depending on how the value is given.
+            * single value or [value]: condition <= value
+            * [value0, value1]: value0 <= condition < value1
+            * [None, value]: condition < value
+            * [value, None]: value <= condition
+        keywords (condition of str): Search keywords.
+        is_video (condition of bool): Search condition whether video or audio.
     """
 
     service_id: Optional[ConditionT[Union[int, str]]] = None

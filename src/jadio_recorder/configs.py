@@ -4,7 +4,7 @@ from typing import Optional, Union
 from dataclasses_json import DataClassJsonMixin
 
 from .podcast import PodcastChannel
-from .query import ProgramQuery
+from .program_query import ProgramQuery
 
 
 @dataclass

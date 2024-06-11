@@ -11,7 +11,7 @@ import tqdm
 from jadio import Jadio, Program
 
 from ..configs import RecordConfig
-from ..query import ProgramQuery, queries_to_mongo_format
+from ..program_query import ProgramQuery, queries_to_mongo_format
 from .base import DatabaseHandler
 
 logger = logging.getLogger(__name__)
