@@ -11,7 +11,7 @@ import tqdm
 from jadio import Jadio, Program
 
 from .database import RecorderDatabase as Database
-from .query import ProgramQuery, to_query
+from .query import ProgramQuery, queries_to_mongo_format
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class Recorder:
     def reserve_programs(self, queries: List[ProgramQuery]) -> List[Program]:
         logger.info("Start reserving programs")
         self.db.reserved_programs.delete_many({})
-        query = to_query(queries)
+        query = queries_to_mongo_format(queries)
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
@@ -101,7 +101,7 @@ class Recorder:
         date_query = ProgramQuery(
             pub_date={"$lt": datetime.datetime.now() - datetime.timedelta(hours=2)},
         )
-        target_programs = self.db.reserved_programs.find(date_query.to_query())
+        target_programs = self.db.reserved_programs.find(date_query.to_mongo_format())
 
         ret = []
         for program in tqdm.tqdm(list(target_programs)):

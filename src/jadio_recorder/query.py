@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from dataclasses_json import DataClassJsonMixin
 
 T = TypeVar("T")
-Condition = Optional[Union[T, Dict[str, T]]]
-
+Condition = Optional[Union[T, Dict[str, Union[T, List[T]]]]]
+MongoQueryDict = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 __all__ = [
     "ProgramQuery",
-    "to_query",
+    "queries_to_mongo_format",
 ]
 
 
@@ -22,7 +22,7 @@ class ProgramQuery(DataClassJsonMixin):
     station_id: Condition[str] = None
     program_id: Condition[int] = None
     episode_id: Condition[int] = None
-    pub_date: Condition[datetime.datetime] = None
+    pub_date: Condition[dt.datetime] = None
     duration: Condition[int] = None
     program_title: Condition[str] = None
     episode_title: Condition[str] = None
@@ -33,14 +33,10 @@ class ProgramQuery(DataClassJsonMixin):
     guests: Condition[List[str]] = None
     is_video: Condition[bool] = None
 
-    def to_query(self) -> Dict[str, List[Dict[str, Any]]]:
-        ret = []
-        for key, condition in self.to_dict().items():
-            if condition is None:
-                continue
-            ret.append({key: condition})
+    def to_mongo_format(self) -> MongoQueryDict:
+        ret = [{key: cond} for key, cond in self.to_dict().items() if cond]
         return {"$and": ret}
 
 
-def to_query(queries: List[ProgramQuery]) -> Dict[str, Dict[str, Any]]:
-    return {"$or": [query.to_query() for query in queries]}
+def queries_to_mongo_format(queries: List[ProgramQuery]) -> MongoQueryDict:
+    return {"$or": [query.to_mongo_format() for query in queries]}
