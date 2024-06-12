@@ -48,6 +48,8 @@ class ProgramGroup(DataClassJsonMixin):
 
     def to_dict(self, encode_json: bool = False) -> Json:
         ret = super().to_dict(encode_json)
+        # Workaround: To ignore None fields in query
+        ret["query"] = self.query.to_dict(encode_json)
         return {key: value for key, value in ret.items() if value is not None}
 
     @classmethod
