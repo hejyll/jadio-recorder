@@ -33,6 +33,19 @@ The following is the setup procedure for all necessary packages and servers, inc
 
 Environment variables in [`docker/docker-compose.yml`](docker/docker-compose.yml) can be modified in [`docker/.env`](docker/.env) if necessary.
 
+By default, the program media files recorded and RSS files and MongoDB entities under [`jadio-recorder/data/`](./data/) are mounted by various containers to store and access files.
+
+| Env. value | Description | Default |
+| -- | -- | -- |
+| `CONFIG_ROOT` | Root directory of various config files | `jadio-recorder/data/configs` |
+| `MEDIA_ROOT` | Root directory of recorded radio programs | `jadio-recorder/data/media` |
+| `RSS_ROOT` | Root directory of RSS feeds | `jadio-recorder/data/rss` |
+| `MONGO_PORT` | Port of MongoDB server | `27017` |
+| `MONGO_HOST` | Host of MongoDB server | `mongodb://docker-jadio-mongo-1:${MONGO_PORT}/` |
+| `MONGO_ROOT` | Root directory of MongoDB entities | `jadio-recorder/data/mongo` |
+| `HTTPD_PORT` | Port of HTTP server | `80` |
+| `HTTPD_HOST` | Host of HTTP server | `http://localhost:${HTTPD_PORT}/` |
+
 #### Run Docker containers
 
 Run Docker containers of MongoDB, HTTP and Jadio servers via `docker compose` command.
@@ -40,6 +53,16 @@ Run Docker containers of MongoDB, HTTP and Jadio servers via `docker compose` co
 ```bash
 git clone https://github.com/hejyll/jadio-recorder
 (cd jadio-recorder/docker && docker-compose up -d)
+```
+
+After executing the above command, you can confirm that the containers are running.
+
+```console
+$ docker ps
+CONTAINER ID   IMAGE               COMMAND                  CREATED       STATUS       PORTS                      NAMES
+d9f268ce90ab   mongo               "docker-entrypoint.s…"   2 hours ago   Up 2 hours   0.0.0.0:27017->27017/tcp   docker-jadio-mongo-1
+7339afae540b   httpd:2.4           "httpd-foreground"       2 hours ago   Up 2 hours   0.0.0.0:80->80/tcp         docker-jadio-httpd-1
+1b4cb3f67e22   docker-jadio-cron   "/bin/sh -c 'cron -f'"   2 hours ago   Up 2 hours                              docker-jadio-cron-1
 ```
 
 ### Case: Direct installation on the host
@@ -62,9 +85,43 @@ pip install git+https://github.com/hejyll/jadio-recorder
 
 ## Usage
 
-### Docker
+### Docker container (`jadio-cron`)
+
+#### Reserve radio programs
+
+You can reserve radio programs by creating the config file described in [Config for `reserve` and `group` sub-command](#config-for-reserve-and-group-sub-command) under `jadio-recorder/data/configs/` and executing [`jadio-reserve.sh`](docker/scripts/jadio-reserve.sh) command.
+
+```bash
+docker exec -ti docker-jadio-cron-1 /jadio/scripts/jadio-reserve.sh ./data/configs/reserve.json
+```
+
+The sample config file ([`data/configs/reserve.json`](data/configs/reserve.json)) used in this example is a scheduled recording of TBS Radio's ["JUNK"](https://www.tbsradio.jp/junk/) late-night radio series.
+
+#### [Optional] Grouping of radio programs (My Lists)
+
+The conditions reserved in `jadio-reserve.sh` will also be used to broadcast Podcasts (create RSS feeds), so if that is sufficient, this step is not necessary.
+
+You can group radio programs by creating the config file described in [Config for `reserve` and `group` sub-command](#config-for-reserve-and-group-sub-command) under `jadio-recorder/data/configs/` and executing [`jadio-group.sh`](docker/scripts/jadio-group.sh) command.
+
+```bash
+docker exec -ti docker-jadio-cron-1 /jadio/scripts/jadio-group.sh ./data/configs/group.json
+```
+
+The sample config file ([`data/configs/group.json`](data/configs/group.json)) used in this example is a setting for grouping and distributing Podcast of "JUNK 伊集院光・深夜の馬鹿力" which is broadcast on Mondays from 25:00 to 27:00.
+
+#### Scheduled radio programs recordings
+
+If the `jadio-cron` container (`docker-jadio-cron-1`) is running, it will automatically execute [`jadio-cron.sh`](docker/scripts/jadio-cron.sh) to search and record the programs reserved by `jadio-reserve.sh` and create Podcast RSS feeds defined by `jadio-group.sh` once a day.
+
+The time at which `jadio-cron.sh` is executed is defined in [`docker/Dockerfile`](docker/Dockerfile) and in `/etc/cron.d/cron-jadio` in the container. Modify these if you want to change the time of execution.
+
+#### Add RSS feed URLs to Podcast app
+
+The RSS feed (XML) is generated with the naming convention `<HTTPD_HOST>/rss/<program-group-id>.xml` (e.g. http://localhost/rss/666240f2a4db94c8b7e311b3.xml), which can be added to any Podcast apps.
 
 ### CLI (`jadio` command)
+
+Explains how to execute the `jadio` command directly.
 
 #### `reserve` sub-command
 
@@ -156,7 +213,7 @@ jadio feed \
 * `--db-host` (default: `mongodb://localhost:27017/`)
   * Specify the MongoDB host to be used by `jadio` command.
 
-#### Config for `reserve` and `group` sub-command
+### Config for `reserve` and `group` sub-command
 
 Just describe the data fields listed in [Data fields / `ProgramGroup`](#programgroup) in JSON as follows ([`data/configs/reserve.json`](data/configs/reserve.json)).
 
