@@ -7,12 +7,17 @@ import pymongo.collation
 import pymongo.database
 
 
-class RecorderDatabase:
-    def __init__(self, host: Optional[str] = None) -> None:
+class JadioDatabase:
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        name: str = "jadio",
+    ) -> None:
         host = host or "mongodb://localhost:27017/"
         self._client = pymongo.MongoClient(host)
+        self._name = name
 
-    def __enter__(self) -> RecorderDatabase:
+    def __enter__(self) -> JadioDatabase:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -23,7 +28,7 @@ class RecorderDatabase:
 
     @property
     def _database(self) -> pymongo.database.Database:
-        return self._client.get_database("recorder")
+        return self._client.get_database(self._name)
 
     @property
     def fetched_programs(self) -> pymongo.collation.Collation:
@@ -36,6 +41,10 @@ class RecorderDatabase:
     @property
     def recorded_programs(self) -> pymongo.collation.Collation:
         return self._database.get_collection("recorded_programs")
+
+    @property
+    def program_groups(self) -> pymongo.collation.Collation:
+        return self._database.get_collection("program_groups")
 
     @property
     def stations(self) -> pymongo.collation.Collation:

@@ -10,70 +10,88 @@ from typing import Dict, List, Optional, Union
 import tqdm
 from jadio import Jadio, Program
 
-from .database import RecorderDatabase as Database
-from .query import ProgramQuery, to_query
+from ..program_group import ProgramGroup
+from ..program_query import ProgramQuery, queries_to_mongo_format
+from .base import DatabaseHandler
 
 logger = logging.getLogger(__name__)
 
 
-class Recorder:
+class Recorder(DatabaseHandler):
     def __init__(
         self,
-        media_root: Union[str, Path] = ".",
         service_config: Dict[str, str] = {},
-        database_host: Optional[str] = None,
+        media_root: Union[str, Path] = ".",
+        db_host: Optional[str] = None,
+        db_name: str = "jadio",
     ) -> None:
+        super().__init__(db_host, db_name)
         self._media_root = Path(media_root)
-        self._media_root.mkdir(exist_ok=True)
-
+        self._media_root.mkdir(parents=True, exist_ok=True)
         self._service = Jadio(service_config)
-        self._database = Database(database_host)
-
-    @property
-    def db(self) -> Database:
-        return self._database
-
-    def __enter__(self) -> Recorder:
-        self.login()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.close()
 
     def login(self) -> None:
         self._service.login()
 
     def close(self) -> None:
+        super().close()
         self._service.close()
-        self.db.close()
 
-    def _update_timestamp(self, name: str) -> None:
-        timestamp = datetime.datetime.now()
-        self.db.timestamp.update_one(
-            {"name": name}, {"$set": {"datetime": timestamp}}, upsert=True
+    def insert_program_group(
+        self,
+        program_group: ProgramGroup,
+        enable_feed: bool = True,
+    ) -> None:
+        logger.info("Start: insert_program_group")
+
+        program_group.enable_record = True
+        program_group.enable_feed = enable_feed
+
+        program_group = program_group.to_dict()
+        if self.db.program_groups.find_one(
+            {"query": program_group["query"], "enable_record": True}
+        ):
+            logger.info("There is already a program group for the same query.")
+        self.db.program_groups.update_one(
+            program_group, {"$set": program_group}, upsert=True
         )
 
+        self._update_timestamp("insert_program_group")
+        logger.info("Finish: insert_program_group")
+
     def fetch_programs(self, force: bool = False, interval_days: int = 1) -> None:
+        logger.info("Start: fetch_programs")
+
         timestamp = self.db.timestamp.find_one({"name": "fetch_programs"})
         if not timestamp:
             force = True
         else:
-            timestamp = timestamp["datetime"]
+            timestamp = timestamp["timestamp"]
         now = datetime.datetime.now()
         if not force and timestamp + datetime.timedelta(days=interval_days) > now:
+            logger.info("Skipped: fetch_programs")
             return
 
-        logger.info("Start fetching programs")
         programs = self._service.get_programs()
         self.db.fetched_programs.delete_many({})
         self.db.fetched_programs.insert_many([p.to_dict() for p in programs])
-        self._update_timestamp("fetch_programs")
-        logger.info(f"Finish fetching {len(programs)} programs")
 
-    def reserve_programs(self, queries: List[ProgramQuery]) -> List[Program]:
-        logger.info("Start reserving programs")
+        self._update_timestamp("fetch_programs")
+        logger.info(f"Finish: fetch_programs: {len(programs)} programs")
+
+    def search_programs(self) -> List[Program]:
+        logger.info("Start: search_programs")
+
         self.db.reserved_programs.delete_many({})
-        query = to_query(queries)
+        program_groups = list(self.db.program_groups.find({"enable_record": True}))
+        if len(program_groups) == 0:
+            return []
+        program_groups = [
+            ProgramGroup.from_dict(program_group) for program_group in program_groups
+        ]
+        query = queries_to_mongo_format(
+            [program_group.query for program_group in program_groups]
+        )
         ret: List[Program] = []
         for program in self.db.fetched_programs.find(query):
             program.pop("_id")
@@ -90,18 +108,18 @@ class Recorder:
                 if not self.db.recorded_programs.find_one(find_query):
                     ret.append(Program.from_dict(program))
                     self.db.reserved_programs.insert_one(program)
-        self._update_timestamp("reserve_programs")
-        logger.info(f"Finish reserving {len(ret)} program(s)")
+
+        self._update_timestamp("search_programs")
+        logger.info(f"Finish: search_programs: {len(ret)} program(s)")
         return ret
 
     def record_programs(self) -> List[Program]:
-        logger.info("Start recording programs")
+        logger.info("Start: record_programs")
 
         # Only programs that have completed broadcasting can be downloaded.
-        date_query = ProgramQuery(
-            pub_date={"$lt": datetime.datetime.now() - datetime.timedelta(hours=2)},
-        )
-        target_programs = self.db.reserved_programs.find(date_query.to_query())
+        lt_date = datetime.datetime.now() - datetime.timedelta(hours=2)
+        date_query = ProgramQuery(pub_date=[None, lt_date])
+        target_programs = self.db.reserved_programs.find(date_query.to_mongo_format())
 
         ret = []
         for program in tqdm.tqdm(list(target_programs)):
@@ -131,13 +149,14 @@ class Recorder:
                         with open(str(save_root / f"program.json"), "w") as fh:
                             fh.write(program.to_json(indent=2, ensure_ascii=False))
 
-                        logger.info(f"Save media and program file to {save_root}")
+                        logger.debug(f"Save media and program file to {save_root}")
                         ret.append(program)
                 except Exception as err:
                     if inserted_id:
                         self.db.recorded_programs.delete_one({"_id": inserted_id})
                     logger.error(f"error: {err}\n{program}", stack_info=True)
             self.db.reserved_programs.delete_one({"_id": target_id})
+
         self._update_timestamp("record_programs")
-        logger.info(f"Finish recording {len(ret)} program(s)")
+        logger.info(f"Finish: record_programs: {len(ret)} program(s)")
         return ret
