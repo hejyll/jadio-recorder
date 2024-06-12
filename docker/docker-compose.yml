@@ -11,10 +11,19 @@ services:
     #   MONGO_INITDB_ROOT_USERNAME: user
     #   MONGO_INITDB_ROOT_PASSWORD: ****
     volumes:
-      - ${SVR_ROOT}/mongo/data/db:/data/db
-      - ${SVR_ROOT}/mongo/data/configdb:/data/configdb
+      - ${MONGO_ROOT}/db:/data/mongo/db
+      - ${MONGO_ROOT}/configdb:/data/mongo/configdb
 
-  jadio-recorder:
+  jadio-httpd:
+    image: httpd:2.4
+    restart: always
+    ports:
+      - ${HTTPD_PORT}:80
+    volumes:
+      - ${MEDIA_ROOT}:/usr/local/apache2/htdocs/media:ro
+      - ${RSS_ROOT}:/usr/local/apache2/htdocs/rss:ro
+
+  jadio-cron:
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,6 +32,8 @@ services:
     shm_size: 2g
     environment:
       - MONGO_HOST=${MONGO_HOST}
+      - HTTPD_HOST=${HTTPD_HOST}
     volumes:
-      - ${SVR_ROOT}/jadio-recorder:/data/jadio-recorder
+      - ${CONFIG_ROOT}:/data/config
       - ${MEDIA_ROOT}:/data/media
+      - ${RSS_ROOT}:/data/rss
