@@ -41,7 +41,8 @@ class ProgramQuery(DataClassJsonMixin):
             * [value0, value1]: value0 <= condition < value1
             * [None, value]: condition < value
             * [value, None]: value <= condition
-        keywords (condition of str): Search keywords.
+        keywords (condition of str): Search keywords. Search for text strings against
+            program titles, descriptions and information, performers, and guests.
         is_video (condition of bool): Search condition whether video or audio.
     """
 

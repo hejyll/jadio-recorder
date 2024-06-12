@@ -106,8 +106,7 @@ class Feeder(DatabaseHandler):
                 ret.append(program_group)
             except Exception as err:
                 logger.error(f"Error: {err}\n{program_group}", stack_info=True)
-                raise err
 
         self._update_timestamp("feed_rss")
-        logger.info(f"Finis: feed_rss: {len(ret)} feeds")
+        logger.info(f"Finish: feed_rss: {len(ret)} feeds")
         return ret

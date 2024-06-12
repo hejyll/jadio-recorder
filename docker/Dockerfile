@@ -20,7 +20,7 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 
 RUN python3 -m pip install git+https://github.com/hejyll/jadio-recorder
 
-COPY ./jadio-recorder.sh /usr/local/bin/jadio-recorder-periodic
-RUN echo "0 5 * * * root /usr/local/bin/jadio-recorder-periodic" > /etc/cron.d/cron-jadio-recorder
+COPY ./scripts /jadio/scripts
+RUN echo "0 5 * * * root /jadio/scripts/jadio-cron.sh" > /etc/cron.d/cron-jadio
 
 CMD cron -f

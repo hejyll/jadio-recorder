@@ -42,22 +42,21 @@ def add_argument_record_programs(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--service-config-path",
         type=Path,
-        # TODO: fix default path
-        default="./svr/jadio-recorder/config.json",
+        default="./data/configs/service.json",
         help="Radio service config Json file path",
     )
     parser.add_argument(
-        "--media-root", type=Path, default="./media", help="Media root directory"
+        "--media-root", type=Path, default="./data/media", help="Media root directory"
     )
 
 
 def add_argument_feed_rss(parser: argparse.ArgumentParser):
     parser.set_defaults(handler=feed_rss)
     parser.add_argument(
-        "--rss-root", type=Path, default="./rss", help="RSS root directory"
+        "--rss-root", type=Path, default="./data/rss", help="RSS root directory"
     )
     parser.add_argument(
-        "--media-root", type=Path, default="./media", help="Media root directory"
+        "--media-root", type=Path, default="./data/media", help="Media root directory"
     )
     parser.add_argument(
         "--http-host",
