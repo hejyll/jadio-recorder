@@ -18,6 +18,7 @@ from dataclasses_json import DataClassJsonMixin
 from jadio import Program
 from mutagen import mp3, mp4
 
+from .program_category import ProgramCategory
 from .program_group import ProgramGroup
 
 RADIKO_LINK = "https://radiko.jp/"
@@ -191,7 +192,7 @@ class PodcastChannel(DataClassJsonMixin):
     description: str
     itunes_image: Optional[str] = None
     language: str = "ja"
-    itunes_category: Optional[ItunesCategory] = None
+    itunes_category: Optional[Union[ItunesCategory, List[ItunesCategory]]] = None
     itunes_explicit: bool = False
 
     # Recommended tags
@@ -211,9 +212,19 @@ class PodcastChannel(DataClassJsonMixin):
         query = program_group.query
         query_str = f"Query: {query.to_json(ensure_ascii=False)}"
         default_title = str(query.keywords) if query.keywords else query_str
+
+        itunes_category = None
+        if program_group.category:
+            categories = program_group.category
+            categories = categories if isinstance(categories, list) else [categories]
+            for category in categories:
+                if isinstance(category, ProgramCategory):
+                    itunes_category.append(category.to_itunes_category())
+
         return PodcastChannel(
             title=program_group.title or default_title,
             description=program_group.description or query_str,
+            itunes_category=itunes_category,
             itunes_image=program_group.image_url,
             itunes_author=program_group.author,
             link=program_group.link_url,
@@ -229,8 +240,11 @@ class PodcastChannel(DataClassJsonMixin):
         # WORKAROUND: avoid file format error
         ret.podcast._PodcastExtension__itunes_image = self.itunes_image
         ret.language(self.language)
-        if self.itunes_category:
-            ret.podcast.itunes_category(self.itunes_category.to_dict())
+        if self.itunes_category is not None:
+            categories = self.itunes_category
+            categories = categories if isinstance(categories, list) else [categories]
+            for category in categories:
+                ret.podcast.itunes_category(category.to_dict())
         ret.podcast.itunes_explicit("yes" if self.itunes_explicit else "no")
 
         ret.podcast.itunes_author(self.itunes_author)
