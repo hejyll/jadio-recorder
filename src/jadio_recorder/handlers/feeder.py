@@ -47,14 +47,14 @@ class Feeder(DatabaseHandler):
         self._update_timestamp("insert_program_group")
         logger.info("Finish: insert_program_group")
 
-    def update_feed(
+    def _feed_rss(
         self,
         program_group: ProgramGroup,
         object_id: Union[str, ObjectId],
         pretty: bool = True,
     ) -> None:
         # fetch specified recorded programs
-        logger.debug(f"Update RSS feed: {program_group}")
+        logger.debug(f"Feed RSS: {program_group}")
         programs = self.db.recorded_programs.find(program_group.query.to_mongo_format())
         program_and_id_pairs = [
             (Program.from_dict(program), program["_id"]) for program in programs
@@ -75,10 +75,10 @@ class Feeder(DatabaseHandler):
         feed_generator.rss_file(rss_feed_path, pretty=pretty)
         logger.debug(f"Save RSS feed to {rss_feed_path}")
 
-    def update_feeds(self, force: bool = False) -> List[ProgramGroup]:
-        logger.info("Start: update_feeds")
+    def feed_rss(self, force: bool = False) -> List[ProgramGroup]:
+        logger.info("Start: feed_rss")
 
-        last_timestamp = self.db.timestamp.find_one({"name": "update_feeds"})
+        last_timestamp = self.db.timestamp.find_one({"name": "feed_rss"})
         if last_timestamp:
             last_timestamp = last_timestamp["timestamp"]
 
@@ -98,16 +98,16 @@ class Feeder(DatabaseHandler):
                     and (self._rss_root / f"{str(object_id)}.xml").exists()
                 ):
                     logger.debug(
-                        f"Skip: update the RSS feed of completed channels: {str(object_id)}"
+                        f"Skip: feed the RSS of completed channels: {str(object_id)}"
                     )
                     continue
             try:
-                self.update_feed(program_group, object_id)
+                self._feed_rss(program_group, object_id)
                 ret.append(program_group)
             except Exception as err:
                 logger.error(f"Error: {err}\n{program_group}", stack_info=True)
                 raise err
 
-        self._update_timestamp("update_feeds")
-        logger.info(f"Finis: update_feeds: {len(ret)} feeds")
+        self._update_timestamp("feed_rss")
+        logger.info(f"Finis: feed_rss: {len(ret)} feeds")
         return ret

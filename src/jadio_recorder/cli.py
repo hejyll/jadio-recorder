@@ -51,8 +51,8 @@ def add_argument_record_programs(parser: argparse.ArgumentParser):
     )
 
 
-def add_argument_update_feeds(parser: argparse.ArgumentParser):
-    parser.set_defaults(handler=update_feeds)
+def add_argument_feed_rss(parser: argparse.ArgumentParser):
+    parser.set_defaults(handler=feed_rss)
     parser.add_argument(
         "--rss-root", type=Path, default="./rss", help="RSS root directory"
     )
@@ -90,7 +90,7 @@ def parse_args() -> argparse.Namespace:
         ),
         (
             "feed",
-            add_argument_update_feeds,
+            add_argument_feed_rss,
             "Create Podcast RSS feeds of recorded radio programs.",
         ),
     ]
@@ -142,14 +142,14 @@ def record_programs(args: argparse.Namespace) -> None:
         handler.record_programs()
 
 
-def update_feeds(args: argparse.Namespace) -> None:
+def feed_rss(args: argparse.Namespace) -> None:
     with Feeder(
         rss_root=args.rss_root,
         media_root=args.media_root,
         http_host=args.http_host,
         db_host=args.db_host,
     ) as handler:
-        handler.update_feeds()
+        handler.feed_rss()
 
 
 def main():
