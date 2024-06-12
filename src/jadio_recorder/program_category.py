@@ -62,7 +62,7 @@ class ProgramCategory(enum.Enum):
             ProgramCategory.PHILOSOPHY: ("Society &amp; Culture", "Philosophy"),
             ProgramCategory.MUSIC: ("Music",),
             ProgramCategory.KIDS: ("Kids &amp; Family",),
-            ProgramCategory.PARENTING: ("Parenting",),
+            ProgramCategory.PARENTING: ("Kids &amp; Family", "Parenting",),
             ProgramCategory.NONFICTION: ("Society &amp; Culture", "Documentary"),
             ProgramCategory.ARTS: ("Arts",),
             ProgramCategory.FASHION: ("Arts", "Fashion &amp; Beauty"),

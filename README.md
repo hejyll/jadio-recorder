@@ -199,7 +199,7 @@ Refers to the program categories at https://podcast.1242.com/.
 | `PHILOSOPHY` | 哲学 | Society &amp; Culture / Philosophy |
 | `MUSIC` | 音楽 | Music |
 | `KIDS` | キッズ | Kids &amp; Family |
-| `PARENTING` | 子育て | Parenting |
+| `PARENTING` | 子育て | Kids &amp; Family / Parenting |
 | `NONFICTION` | ノンフィクション | Society &amp; Culture / Documentary |
 | `ARTS` | アート | Arts |
 | `FASHION` | ファッション | Arts / Fashion &amp; Beauty |
