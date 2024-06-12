@@ -67,4 +67,4 @@ class ProgramCategory(enum.Enum):
             ProgramCategory.ARTS: ("Arts",),
             ProgramCategory.FASHION: ("Arts", "Fashion &amp; Beauty"),
             ProgramCategory.TECHNOLOGY: ("Technology",),
-        }
+        }.get(self)

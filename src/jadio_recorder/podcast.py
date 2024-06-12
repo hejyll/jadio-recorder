@@ -213,13 +213,15 @@ class PodcastChannel(DataClassJsonMixin):
         query_str = f"Query: {query.to_json(ensure_ascii=False)}"
         default_title = str(query.keywords) if query.keywords else query_str
 
-        itunes_category = None
+        itunes_category = []
         if program_group.category:
             categories = program_group.category
             categories = categories if isinstance(categories, list) else [categories]
             for category in categories:
                 if isinstance(category, ProgramCategory):
-                    itunes_category.append(category.to_itunes_category())
+                    itunes_category.append(
+                        ItunesCategory(*category.to_itunes_category())
+                    )
 
         return PodcastChannel(
             title=program_group.title or default_title,
