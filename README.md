@@ -115,6 +115,8 @@ If the `jadio-cron` container (`docker-jadio-cron-1`) is running, it will automa
 
 The time at which `jadio-cron.sh` is executed is defined in [`docker/Dockerfile`](docker/Dockerfile) and in `/etc/cron.d/cron-jadio` in the container. Modify these if you want to change the time of execution.
 
+If you are premium member of radiko.jp or onsen.ag, you can also record programs for members by putting your login information in [`data/configs/service.json`](data/configs/service.json). See [README.md of jadio](https://github.com/hejyll/jadio/blob/main/README.md#configs-argument-of-jadiojadio) for details.
+
 #### Add RSS feed URLs to Podcast app
 
 The RSS feed (XML) is generated with the naming convention `<HTTPD_HOST>/rss/<program-group-id>.xml` (e.g. http://localhost/rss/666240f2a4db94c8b7e311b3.xml), which can be added to any Podcast apps.
