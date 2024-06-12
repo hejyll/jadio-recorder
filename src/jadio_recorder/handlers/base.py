@@ -3,9 +3,11 @@ from __future__ import annotations
 import abc
 import datetime
 import logging
-from typing import Optional
+from typing import Optional, TypeVar
 
 from ..database import JadioDatabase
+
+A = TypeVar("A", bound="DatabaseHandler")
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class DatabaseHandler(abc.ABC):
     def db(self) -> JadioDatabase:
         return self._database
 
-    def __enter__(self) -> DatabaseHandler:
+    def __enter__(self: A) -> A:
         self.login()
         return self
 
