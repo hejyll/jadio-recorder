@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from dataclasses_json import DataClassJsonMixin
+from dataclasses_json.core import Json
 
 T = TypeVar("T")
 ConditionT = Union[T, List[T]]
@@ -52,6 +53,10 @@ class ProgramQuery(DataClassJsonMixin):
     duration: Optional[ConditionT[Union[int, float]]] = None
     keywords: Optional[ConditionT[str]] = None
     is_video: Optional[ConditionT[bool]] = None
+
+    def to_dict(self, encode_json: bool = False) -> Json:
+        ret = super().to_dict(encode_json)
+        return {key: value for key, value in ret.items() if value is not None}
 
     def to_mongo_format(self) -> Dict[str, Any]:
         and_cond = []

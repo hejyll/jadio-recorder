@@ -18,7 +18,7 @@ from dataclasses_json import DataClassJsonMixin
 from jadio import Program
 from mutagen import mp3, mp4
 
-PathLike = Union[str, Path]
+from .program_group import ProgramGroup
 
 RADIKO_LINK = "https://radiko.jp/"
 
@@ -149,7 +149,7 @@ class PodcastItem(DataClassJsonMixin):
             ),
             guid=str(program.episode_id),
             pub_date=program.pub_date,
-            description=program.information or program.description,
+            description=program.description,
             itunes_duration=int(duration),
             link=program.link_url,
             itunes_image=program.image_url,
@@ -207,14 +207,17 @@ class PodcastChannel(DataClassJsonMixin):
     itunes_complete: bool = False
 
     @classmethod
-    def from_program(cls, program: Program) -> PodcastChannel:
+    def from_program_group(cls, program_group: ProgramGroup) -> PodcastChannel:
+        query = program_group.query
+        query_str = f"Query: {query.to_json(ensure_ascii=False)}"
+        default_title = str(query.keywords) if query.keywords else query_str
         return PodcastChannel(
-            title=program.program_title,
-            description=program.description or program.information,
-            itunes_image=program.image_url,
-            itunes_author=program.service_id,
-            link=program.link_url,
-            copyright=program.copyright,
+            title=program_group.title or default_title,
+            description=program_group.description or query_str,
+            itunes_image=program_group.image_url,
+            itunes_author=program_group.author,
+            link=program_group.link_url,
+            copyright=program_group.copyright,
         )
 
     def to_feed_generator(self) -> feedgen.feed.FeedGenerator:
@@ -246,15 +249,15 @@ class PodcastRssFeedGenCreator:
     def __init__(
         self,
         base_url: str,
-        media_root: PathLike,
+        media_root: Union[str, Path],
     ) -> None:
         self.base_url = base_url
         self.media_root = Path(media_root)
 
     def create(
         self,
+        program_group: ProgramGroup,
         program_and_id_pairs: List[Tuple[Program, ObjectId]],
-        channel: Optional[PodcastChannel] = None,
         sort_by: Optional[str] = None,
         from_oldest: bool = False,
         remove_duplicates: bool = True,
@@ -302,9 +305,7 @@ class PodcastRssFeedGenCreator:
             program_and_id_pairs = unique_pairs
 
         # create channel of RSS feed
-        if not channel:
-            latest_program = program_and_id_pairs[-1 if from_oldest else 0][0]
-            channel = PodcastChannel.from_program(latest_program)
+        channel = PodcastChannel.from_program_group(program_group)
 
         # create items of RSS feed
         feed_generator = channel.to_feed_generator()

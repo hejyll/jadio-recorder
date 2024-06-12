@@ -3,8 +3,8 @@ import json
 import logging
 from pathlib import Path
 
-from .configs import FeedConfig, RecordConfig
 from .handlers import Feeder, Recorder
+from .program_group import ProgramGroup
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s: %(message)s"
@@ -20,14 +20,18 @@ def add_argument_common(parser: argparse.ArgumentParser):
     )
 
 
-def add_argument_insert_record_config(parser: argparse.ArgumentParser):
-    parser.set_defaults(handler=insert_record_config)
-    parser.add_argument("config_path", type=Path, help="Record config file path (JSON)")
+def add_argument_record_program_group(parser: argparse.ArgumentParser):
+    parser.set_defaults(handler=record_program_group)
+    parser.add_argument(
+        "config_path", type=Path, help="Record program group config file path (JSON)"
+    )
 
 
-def add_argument_insert_feed_config(parser: argparse.ArgumentParser):
-    parser.set_defaults(handler=insert_feed_config)
-    parser.add_argument("config_path", type=Path, help="Feed config file path (JSON)")
+def add_argument_feed_program_group(parser: argparse.ArgumentParser):
+    parser.set_defaults(handler=feed_program_group)
+    parser.add_argument(
+        "config_path", type=Path, help="Feed program group config file path (JSON)"
+    )
 
 
 def add_argument_record_programs(parser: argparse.ArgumentParser):
@@ -71,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     commands = [
         (
             "reserve",
-            add_argument_insert_record_config,
+            add_argument_record_program_group,
             "Reserve radio program recordings.",
         ),
         (
@@ -81,7 +85,7 @@ def parse_args() -> argparse.Namespace:
         ),
         (
             "group",
-            add_argument_insert_feed_config,
+            add_argument_feed_program_group,
             "Group recorded radio programs to compose Podcast RSS feeds.",
         ),
         (
@@ -98,30 +102,30 @@ def parse_args() -> argparse.Namespace:
     return parser
 
 
-def insert_record_config(args: argparse.Namespace) -> None:
+def record_program_group(args: argparse.Namespace) -> None:
     with open(args.config_path, "r") as fh:
         data = fh.read()
         try:
-            configs = RecordConfig.schema().loads(data, many=True)
+            program_groups = ProgramGroup.schema().loads(data, many=True)
         except:
-            configs = [RecordConfig.from_json(data)]
+            program_groups = [ProgramGroup.from_json(data)]
 
     with Recorder(db_host=args.db_host) as handler:
-        for config in configs:
-            handler.insert_config(config, overwrite=True)
+        for program_group in program_groups:
+            handler.insert_program_group(program_group)
 
 
-def insert_feed_config(args: argparse.Namespace) -> None:
+def feed_program_group(args: argparse.Namespace) -> None:
     with open(args.config_path, "r") as fh:
         data = fh.read()
         try:
-            configs = FeedConfig.schema().loads(data, many=True)
+            program_groups = ProgramGroup.schema().loads(data, many=True)
         except:
-            configs = [FeedConfig.from_json(data)]
+            program_groups = [ProgramGroup.from_json(data)]
 
     with Feeder(db_host=args.db_host) as handler:
-        for config in configs:
-            handler.insert_config(config, overwrite=True)
+        for program_group in program_groups:
+            handler.insert_program_group(program_group)
 
 
 def record_programs(args: argparse.Namespace) -> None:
@@ -134,7 +138,7 @@ def record_programs(args: argparse.Namespace) -> None:
         db_host=args.db_host,
     ) as handler:
         handler.fetch_programs(force=args.force_fetch)
-        handler.reserve_programs()
+        handler.search_programs()
         handler.record_programs()
 
 

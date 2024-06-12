@@ -8,8 +8,8 @@ import tqdm
 from bson import ObjectId
 from jadio import Program
 
-from ..configs import FeedConfig
 from ..podcast import PodcastRssFeedGenCreator
+from ..program_group import ProgramGroup
 from .base import DatabaseHandler
 
 logger = logging.getLogger(__name__)
@@ -30,77 +30,84 @@ class Feeder(DatabaseHandler):
         self._media_root = Path(media_root)
         self._http_host = http_host
 
-    def insert_config(self, config: FeedConfig, overwrite: bool = False) -> None:
-        config = config.to_dict()
-        if self.db.feed_configs.find_one({"query": config["query"]}):
-            if not overwrite:
-                logger.info(
-                    "skip inserting config because the same query already exists"
-                )
-                return
-            else:
-                logger.info("overwrite config because the same query already exists")
-                self.db.feed_configs.delete_one({"query": config["query"]})
-        self.db.feed_configs.update_one(config, {"$set": config}, upsert=True)
-        self._update_timestamp("insert_config")
-        logger.info("Finish inserting config")
+    def insert_program_group(self, program_group: ProgramGroup) -> None:
+        logger.info("Start: insert_program_group")
+
+        program_group.enable_feed = True
+
+        program_group = program_group.to_dict()
+        if self.db.program_groups.find_one(
+            {"query": program_group["query"], "enable_feed": True}
+        ):
+            logger.warn("There is already a program group for the same query.")
+        self.db.program_groups.update_one(
+            program_group, {"$set": program_group}, upsert=True
+        )
+
+        self._update_timestamp("insert_program_group")
+        logger.info("Finish: insert_program_group")
 
     def update_feed(
         self,
-        config: FeedConfig,
-        config_id: Union[str, ObjectId],
+        program_group: ProgramGroup,
+        object_id: Union[str, ObjectId],
         pretty: bool = True,
     ) -> None:
         # fetch specified recorded programs
-        logger.debug(f"update RSS feed: {config}")
-        query = config.query.to_mongo_format()
-        programs = self.db.recorded_programs.find(query)
+        logger.debug(f"Update RSS feed: {program_group}")
+        programs = self.db.recorded_programs.find(program_group.query.to_mongo_format())
         program_and_id_pairs = [
             (Program.from_dict(program), program["_id"]) for program in programs
         ]
         if len(program_and_id_pairs) == 0:
-            logger.info("find no programs. RSS feed is not created")
+            logger.debug("Find no programs. RSS feed is not created")
             return
-        logger.info(f"fetch {len(program_and_id_pairs)} program(s)")
+        logger.debug(f"Fetch {len(program_and_id_pairs)} program(s)")
 
         # create FeedGenerator
         feed_generator = PodcastRssFeedGenCreator(
             self._http_host, self._media_root
-        ).create(program_and_id_pairs, channel=config.channel, remove_duplicates=True)
+        ).create(program_group, program_and_id_pairs, remove_duplicates=True)
 
         # save RSS feed file
-        rss_feed_path = self._rss_root / f"{str(config_id)}.xml"
+        rss_feed_path = self._rss_root / f"{str(object_id)}.xml"
         rss_feed_path.parent.mkdir(exist_ok=True)
         feed_generator.rss_file(rss_feed_path, pretty=pretty)
-        logger.info(f"save RSS feed to {rss_feed_path}")
+        logger.debug(f"Save RSS feed to {rss_feed_path}")
 
-    def update_feeds(self, force: bool = False) -> List[FeedConfig]:
+    def update_feeds(self, force: bool = False) -> List[ProgramGroup]:
+        logger.info("Start: update_feeds")
+
         last_timestamp = self.db.timestamp.find_one({"name": "update_feeds"})
         if last_timestamp:
             last_timestamp = last_timestamp["timestamp"]
 
-        configs = list(self.db.feed_configs.find({}))
+        program_groups = list(self.db.program_groups.find({"enable_feed": True}))
         ret = []
-        for config in tqdm.tqdm(configs):
-            config_id = config.pop("_id")
-            config = FeedConfig.from_dict(config)
-            if isinstance(config.query.pub_date, list) and config.query.pub_date[1]:
-                last_datetime = config.query.pub_date[1]
+        for program_group in tqdm.tqdm(program_groups):
+            object_id = program_group.pop("_id")
+            program_group = ProgramGroup.from_dict(program_group)
+            if (
+                isinstance(program_group.query.pub_date, list)
+                and program_group.query.pub_date[1]
+            ):
+                last_datetime = program_group.query.pub_date[1]
                 if (
                     last_datetime < (last_timestamp or last_datetime)
                     and not force
-                    and (self._rss_root / f"{str(config_id)}.xml").exists()
+                    and (self._rss_root / f"{str(object_id)}.xml").exists()
                 ):
                     logger.debug(
-                        f"skip updates to RSS feed of completed channels: {config.query}"
+                        f"Skip: update the RSS feed of completed channels: {str(object_id)}"
                     )
                     continue
             try:
-                self.update_feed(config, config_id)
-                ret.append(config)
+                self.update_feed(program_group, object_id)
+                ret.append(program_group)
             except Exception as err:
-                logger.error(f"error: {err}\n{config}", stack_info=True)
+                logger.error(f"Error: {err}\n{program_group}", stack_info=True)
+                raise err
 
         self._update_timestamp("update_feeds")
-        logger.info(f"Finish updating {len(ret)} feeds")
+        logger.info(f"Finis: update_feeds: {len(ret)} feeds")
         return ret

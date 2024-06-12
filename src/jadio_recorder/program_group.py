@@ -9,6 +9,10 @@ from dataclasses_json.core import Json
 from .program_category import ProgramCategory
 from .program_query import ProgramQuery
 
+__all__ = [
+    "ProgramGroup",
+]
+
 
 @dataclass
 class ProgramGroup(DataClassJsonMixin):
@@ -39,8 +43,12 @@ class ProgramGroup(DataClassJsonMixin):
     link_url: Optional[str] = None
     image_url: Optional[str] = None
     author: Optional[str] = None
-    enable_record: bool = True
-    enable_feed: bool = True
+    enable_record: bool = False
+    enable_feed: bool = False
+
+    def to_dict(self, encode_json: bool = False) -> Json:
+        ret = super().to_dict(encode_json)
+        return {key: value for key, value in ret.items() if value is not None}
 
     @classmethod
     def from_dict(cls, kvs: Json, *, infer_missing: bool = False) -> ProgramGroup:

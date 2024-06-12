@@ -31,14 +31,6 @@ class JadioDatabase:
         return self._client.get_database(self._name)
 
     @property
-    def record_configs(self) -> pymongo.collation.Collation:
-        return self._database.get_collection("record_configs")
-
-    @property
-    def feed_configs(self) -> pymongo.collation.Collation:
-        return self._database.get_collection("feed_configs")
-
-    @property
     def fetched_programs(self) -> pymongo.collation.Collation:
         return self._database.get_collection("fetched_programs")
 
@@ -49,6 +41,10 @@ class JadioDatabase:
     @property
     def recorded_programs(self) -> pymongo.collation.Collation:
         return self._database.get_collection("recorded_programs")
+
+    @property
+    def program_groups(self) -> pymongo.collation.Collation:
+        return self._database.get_collection("program_groups")
 
     @property
     def stations(self) -> pymongo.collation.Collation:
