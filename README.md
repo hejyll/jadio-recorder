@@ -11,19 +11,27 @@ By specifying conditions flexibly, radio programs can be easily recorded. For ex
 
 ## Setup
 
-### Install jadio-recorder in local
-
-```bash
-pip install git+https://github.com/hejyll/jadio-recorder
-```
-
-### Run Docker containers
+### Case: Using Docker (Recommended)
 
 Launch Docker containers of MongoDB, HTTP and Jadio servers.
 
 ```bash
 git clone https://github.com/hejyll/jadio-recorder
 (cd jadio-recorder/docker && docker-compose up -d)
+```
+
+### Case: Direct installation on the host
+
+TODO
+
+#### Setup MongoDB server
+
+#### Setup HTTPD server
+
+#### Install jadio-recorder in local
+
+```bash
+pip install git+https://github.com/hejyll/jadio-recorder
 ```
 
 ## Usage
@@ -120,11 +128,15 @@ jadio feed \
 
 See docstring in the Python file under [`src/jadio_recorder/`](src/jadio_recorder/).
 
-## Configs
+## Data fields
 
-### For `reserve` sub-command
+TODO
 
-### For `group` sub-command
+### [`ProgramGroup`](src/jadio_recorder/program_group.py)
+
+### [`ProgramQuery`](src/jadio_recorder/program_query.py)
+
+### [`ProgramCategory`](src/jadio_recorder/program_category.py)
 
 ## License
 
