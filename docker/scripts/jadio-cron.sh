@@ -19,13 +19,13 @@ echo "[$(date)] Start ${script}" >> ${LOG_PATH}
     --service-config-path "${SERVICE_CONFIG_PATH}" \
     --media-root "${MEDIA_ROOT}" \
     --db-host "${DB_HOST}" \
-&>> ${LOG_PATH}
+2>&1 | tee -a ${LOG_PATH}
 
 "${COMMAND}" feed \
     --rss-root ${RSS_ROOT} \
     --media-root "${MEDIA_ROOT}" \
     --http-host "${HTTP_HOST}" \
     --db-host "${DB_HOST}" \
-&>> ${LOG_PATH}
+2>&1 | tee -a ${LOG_PATH}
 
 echo "[$(date)] Finish ${script}" >> ${LOG_PATH}

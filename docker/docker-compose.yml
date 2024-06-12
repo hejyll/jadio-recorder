@@ -34,6 +34,6 @@ services:
       - MONGO_HOST=${MONGO_HOST}
       - HTTPD_HOST=${HTTPD_HOST}
     volumes:
-      - ${CONFIG_ROOT}:/data/config
+      - ${CONFIG_ROOT}:/data/configs
       - ${MEDIA_ROOT}:/data/media
       - ${RSS_ROOT}:/data/rss
