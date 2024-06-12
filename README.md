@@ -13,7 +13,7 @@ By specifying conditions flexibly, radio programs can be easily recorded. For ex
 
 **Listen to recorded radio programs via Podcast**
 
-Th Recorded radio programs can be distributed locally in Podcast RSS feed form, making it easy to listen by simply adding the RSS feed URL to the Apple Podcast or Android/iPhone Podcast apps.
+The Recorded radio programs can be distributed locally in Podcast RSS feed form, making it easy to listen by simply adding the RSS feed URL to the Apple Podcast or Android/iPhone Podcast apps.
 
 **Playlisting of favorite radio programs**
 
@@ -116,6 +116,12 @@ If the `jadio-cron` container (`docker-jadio-cron-1`) is running, it will automa
 The time at which `jadio-cron.sh` is executed is defined in [`docker/Dockerfile`](docker/Dockerfile) and in `/etc/cron.d/cron-jadio` in the container. Modify these if you want to change the time of execution.
 
 If you are premium member of radiko.jp or onsen.ag, you can also record programs for members by putting your login information in [`data/configs/service.json`](data/configs/service.json). See [README.md of jadio](https://github.com/hejyll/jadio/blob/main/README.md#configs-argument-of-jadiojadio) for details.
+
+In addition, [`jadio-cron.sh`](docker/scripts/jadio-cron.sh) can be used to force recording.
+
+```bash
+docker exec -ti docker-jadio-cron-1 /jadio/scripts/jadio-cron.sh
+```
 
 #### Add RSS feed URLs to Podcast app
 

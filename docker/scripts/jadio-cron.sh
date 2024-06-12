@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 DATA_ROOT=/data
 SERVICE_CONFIG_PATH="${DATA_ROOT}/configs/service.json"
