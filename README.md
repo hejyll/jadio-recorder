@@ -2,6 +2,8 @@
 
 jadio-recorder is a tool to wrap [jadio](https://github.com/hejyll/jadio) and easily record Japanese web radio programs.
 
+**Flexible recording reservations**
+
 By specifying conditions flexibly, radio programs can be easily recorded. For example, by specifying the following conditions, programs are automatically searched and all found programs are recorded.
 
 * Names of radio services or broadcast stations
@@ -9,11 +11,31 @@ By specifying conditions flexibly, radio programs can be easily recorded. For ex
 * Names of performers or guests
 * Published date and time, and duration of the program
 
+**Listen to recorded radio programs via Podcast**
+
+Th Recorded radio programs can be distributed locally in Podcast RSS feed form, making it easy to listen by simply adding the RSS feed URL to the Apple Podcast or Android/iPhone Podcast apps.
+
+**Playlisting of favorite radio programs**
+
+It is also possible to group recorded radio programs by query and distribute any playlist as Podcast.
+
+**Scheduled recording reservations**
+
+If you use Docker, the Jadio server container will be launched and cron will make a scheduled record (`jadio record`) and create a podcast RSS feed (`jadio feed`) daily to prevent you from forgetting to record.
+
 ## Setup
 
 ### Case: Using Docker (Recommended)
 
-Launch Docker containers of MongoDB, HTTP and Jadio servers.
+The following is the setup procedure for all necessary packages and servers, including jadio, using Docker.
+
+#### [Optional] Modified environment variables for Docker
+
+Environment variables in [`docker/docker-compose.yml`](docker/docker-compose.yml) can be modified in [`docker/.env`](docker/.env) if necessary.
+
+#### Run Docker containers
+
+Run Docker containers of MongoDB, HTTP and Jadio servers via `docker compose` command.
 
 ```bash
 git clone https://github.com/hejyll/jadio-recorder
@@ -22,11 +44,15 @@ git clone https://github.com/hejyll/jadio-recorder
 
 ### Case: Direct installation on the host
 
-TODO
+The following is the setup procedure for preparing your own MongoDB server and HTTP server, or for using existing ones.
 
 #### Setup MongoDB server
 
-#### Setup HTTPD server
+See https://www.mongodb.com/docs/manual/installation/.
+
+#### Setup HTTP server
+
+See https://httpd.apache.org/docs/current/install.html or https://ubuntu.com/server/docs/how-to-install-apache2.
 
 #### Install jadio-recorder in local
 
